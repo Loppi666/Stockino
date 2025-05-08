@@ -1,0 +1,35 @@
+using Microsoft.UI.Xaml.Data;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI;
+using System;
+
+namespace Stockino3.Presentation.Converters
+{
+    public  class ProfitToColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, string language)
+        {
+            if (value is decimal profit)
+            {
+                if (profit > 0)
+                {
+                    // Zisk - zelená barva
+                    return new SolidColorBrush(Colors.ForestGreen);
+                }
+                else if (profit < 0)
+                {
+                    // Ztráta - červená barva
+                    return new SolidColorBrush(Colors.Crimson);
+                }
+            }
+            
+            // Neutrální - šedá barva
+            return new SolidColorBrush(Colors.DimGray);
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, string language)
+        {
+            throw new NotImplementedException();
+        }
+    }
+}

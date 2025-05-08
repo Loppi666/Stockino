@@ -1,0 +1,70 @@
+# Build výstupy
+bin/
+obj/
+[Bb]uild/
+[Bb]uilds/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Nastavení IDE
+.vs/
+.idea/
+*.code-workspace
+.vscode/
+*.sln.iml
+*.DotSettings.user
+
+# NuGet balíčky
+*.nupkg
+*.snupkg
+packages/
+
+# Soubory generované Uno Platform
+Generated/
+AppPackages/
+*.appx
+*.appxbundle
+*.appxupload
+*.msix
+*.msixbundle
+*.msixupload
+
+# Platform-specific build artefakty
+*.apk
+*.aab
+*.ap_
+*.ipa
+*.xcarchive
+*.xcuserstate
+*.xcworkspace
+*.xcodeproj
+.DS_Store
+
+# Logy a dočasné soubory
+*.log
+*.tmp
+*.bak
+*.cache
+
+# Nastavení pro Mac/Linux
+*.swp
+*.swo
+*.orig
+
+# Testovací výsledky
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Lokální konfigurace
+local.settings.json
+
+# Debug symboly
+*.pdb
+*.mdb
+
+# Resharper
+_ReSharper*/

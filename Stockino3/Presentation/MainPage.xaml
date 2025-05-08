@@ -1,0 +1,142 @@
+<Page
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    NavigationCacheMode="Required"
+    x:Class="Stockino3.Presentation.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:composition="clr-namespace:Microsoft.UI.Composition;assembly=Uno.UI.Composition"
+    xmlns:controls="using:Microsoft.Toolkit.Uwp.UI.Controls"
+    xmlns:local="using:Stockino3.Presentation"
+    xmlns:uen="using:Uno.Extensions.Navigation.UI"
+    xmlns:um="using:Uno.Material"
+    xmlns:utu="using:Uno.Toolkit.UI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Page.Resources>
+        <!--  Gradientní pozadí  -->
+        <LinearGradientBrush EndPoint="0,1" StartPoint="0,0" x:Key="MainBackgroundGradient">
+            <GradientStop Color="{ThemeResource SystemAccentColor}" Offset="0.0" />
+            <GradientStop Color="{ThemeResource ApplicationPageBackgroundThemeColor}" Offset="1.0" />
+        </LinearGradientBrush>
+        <!--  Stíny DropShadow byly odstraněny kvůli chybě  -->
+    </Page.Resources>
+    <ScrollViewer>
+        <Grid Padding="0" utu:SafeArea.Insets="VisibleBounds">
+            <Grid.Background>
+                <StaticResource ResourceKey="MainBackgroundGradient" />
+            </Grid.Background>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <utu:NavigationBar Content="{Binding Title}" />
+
+            <!--  HLAVNÍ OBSAH  -->
+            <StackPanel
+                Grid.Row="1"
+                HorizontalAlignment="Center"
+                Margin="0,32,0,32"
+                MaxWidth="420"
+                Spacing="32"
+                VerticalAlignment="Center">
+
+                <!--  Celková hodnota portfolia  -->
+                <Border
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0.5"
+                    CornerRadius="20"
+                    HorizontalAlignment="Stretch"
+                    Margin="0,0,0,8"
+                    Padding="32,28">
+                    <StackPanel>
+                        <TextBlock
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource SystemAccentColor}"
+                            Style="{ThemeResource SubtitleTextBlockStyle}"
+                            Text="Hodnota portfolia" />
+                        <TextBlock
+                            FontSize="44"
+                            FontWeight="Bold"
+                            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                            Margin="0,12,0,0"
+                            Style="{ThemeResource TitleTextBlockStyle}"
+                            Text="123 456 Kč" />
+                    </StackPanel>
+                </Border>
+
+                <!--  Vývoj ceny portfolia  -->
+                <Border
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="0.5"
+                    CornerRadius="20"
+                    HorizontalAlignment="Stretch"
+                    Margin="0,0,0,8"
+                    Padding="24,20">
+                    <StackPanel Spacing="14">
+                        <TextBlock
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource SystemAccentColor}"
+                            Style="{ThemeResource SubtitleTextBlockStyle}"
+                            Text="Vývoj hodnoty portfolia" />
+                        <!--  Placeholder grafu  -->
+                        <Border
+                            Background="{ThemeResource LayerFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="10"
+                            Height="150"
+                            HorizontalAlignment="Stretch"
+                            Margin="0,8,0,0">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <FontIcon
+                                    FontFamily="Segoe Fluent Icons"
+                                    FontSize="38"
+                                    Foreground="{ThemeResource SystemAccentColor}"
+                                    Glyph="&#xE9D2;"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,0,0,8" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    HorizontalAlignment="Center"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Text="Graf vývoje hodnoty portfolia"
+                                    VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <!--  Import transakcí  -->
+                <StackPanel
+                    HorizontalAlignment="Stretch"
+                    Margin="0,0,0,8"
+                    Orientation="Vertical"
+                    Spacing="8"
+                    VerticalAlignment="Center">
+                    <Button
+                        Content="Importovat transakce ze souboru"
+                        CornerRadius="10"
+                        HorizontalAlignment="Stretch"
+                        Padding="12,8"
+                        Style="{ThemeResource ButtonStyle}" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        HorizontalAlignment="Center"
+                        Style="{ThemeResource CaptionTextBlockStyle}"
+                        Text="(CSV/XLSX)"
+                        VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!--  Přechod na grid transakcí  -->
+                <Button
+                    Command="{Binding GoToSecond}"
+                    Content="Zobrazit všechny transakce"
+                    CornerRadius="10"
+                    HorizontalAlignment="Stretch"
+                    Padding="16,12"
+                    Style="{ThemeResource AccentButtonStyle}" />
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

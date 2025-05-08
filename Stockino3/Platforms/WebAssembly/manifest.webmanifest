@@ -1,0 +1,10 @@
+{
+  "background_color": "#ffffff",
+  "description": "Stockino3",
+  "display": "standalone",
+  "name": "Stockino3",
+  "short_name": "Stockino3",
+  "start_url": "/index.html",
+  "theme_color": "#ffffff",
+  "scope": "/"
+}

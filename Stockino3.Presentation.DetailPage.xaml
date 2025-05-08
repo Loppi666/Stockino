@@ -1,0 +1,8 @@
+﻿
+<TextBlock
+    FontSize="16"
+    FontWeight="SemiBold"
+    Grid.Row="1"
+    HorizontalAlignment="Center"
+    Margin="0,8,0,16"
+    Text="{Binding Data.PeGauge.Value, StringFormat='{}{0:F2}'}" />

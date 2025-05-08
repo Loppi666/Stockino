@@ -1,0 +1,898 @@
+<Page
+    Background="{ThemeResource BackgroundBrush}"
+    x:Class="Stockino3.Presentation.DetailPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:charts="using:LiveChartsCore.SkiaSharpView.WinUI"
+    xmlns:converters="using:Stockino3.Presentation.Converters"
+    xmlns:lvc="using:LiveChartsCore.SkiaSharpView.WinUI"
+    xmlns:mvux="using:Uno.Extensions.Reactive.UI"
+    xmlns:ui="clr-namespace:Uno.Toolkit.UI;assembly=Uno.Toolkit.WinUI"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Page.Resources>
+        <!--  Konvertory  -->
+        <converters:PERatioConverter x:Key="PERatioConverter" />
+        <converters:EPSConverter x:Key="EPSConverter" />
+        <converters:PEGRatioConverter x:Key="PEGRatioConverter" />
+        <converters:ROEConverter x:Key="ROEConverter" />
+        <converters:ProfitMarginConverter x:Key="ProfitMarginConverter" />
+        <converters:DividendYieldConverter x:Key="DividendYieldConverter" />
+        <converters:ROAConverter x:Key="ROAConverter" />
+        <converters:OperatingMarginConverter x:Key="OperatingMarginConverter" />
+        <converters:PriceToSalesConverter x:Key="PriceToSalesConverter" />
+        <converters:EVToEBITDAConverter x:Key="EVToEBITDAConverter" />
+        <converters:BetaConverter x:Key="BetaConverter" />
+        <converters:NeedleToColorConverter x:Key="NeedleToColorConverter" />
+
+        <!--  Barevná paleta pro světlý a tmavý režim  -->
+        <SolidColorBrush Color="{ThemeResource SystemAltHighColor}" x:Key="CardBackgroundBrush" />
+        <SolidColorBrush Color="{ThemeResource SystemAccentColor}" x:Key="AccentBrush" />
+        <SolidColorBrush
+            Color="{ThemeResource SystemBaseMediumLowColor}"
+            Opacity="0.2"
+            x:Key="SubtleBorderBrush" />
+        <SolidColorBrush Color="{ThemeResource SystemBaseHighColor}" x:Key="HeaderTextBrush" />
+        <SolidColorBrush Color="{ThemeResource SystemBaseMediumHighColor}" x:Key="SubheaderTextBrush" />
+        <SolidColorBrush Color="{ThemeResource SystemBaseHighColor}" x:Key="BodyTextBrush" />
+
+        <!--  Styly pro textové prvky  -->
+        <Style TargetType="TextBlock" x:Key="SectionHeaderStyle">
+            <Setter Property="FontSize" Value="24" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource HeaderTextBrush}" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <Style TargetType="TextBlock" x:Key="SubSectionHeaderStyle">
+            <Setter Property="FontSize" Value="20" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource SubheaderTextBrush}" />
+            <Setter Property="Margin" Value="0,0,0,12" />
+        </Style>
+
+        <Style TargetType="Border" x:Key="CardStyle">
+            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource SubtleBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="20" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <Style TargetType="TextBlock" x:Key="LabelTextStyle">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource SubheaderTextBrush}" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+        </Style>
+
+        <Style TargetType="TextBlock" x:Key="ValueTextStyle">
+            <Setter Property="Foreground" Value="{StaticResource BodyTextBrush}" />
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+
+        <!--  Styl pro informační ikony  -->
+        <Style TargetType="Button" x:Key="InfoButtonStyle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Width" Value="24" />
+            <Setter Property="Height" Value="24" />
+            <Setter Property="Margin" Value="0,0,0,0" />
+        </Style>
+
+
+        <!--  Styl pro tabsové tlačítko  -->
+        <Style TargetType="Button" x:Key="TabButtonStyle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0,0,0,3" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Padding" Value="16,8" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="{StaticResource SubheaderTextBrush}" />
+        </Style>
+
+        <Style
+            BasedOn="{StaticResource TabButtonStyle}"
+            TargetType="Button"
+            x:Key="TabButtonActiveStyle">
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Navigační panel  -->
+
+
+        <ui:NavigationBar Content="{Binding Title}">
+            <AppBarButton
+                Click="BackButton_Click"
+                HorizontalAlignment="Left"
+                Icon="Back"
+                Label="Zpět na transakce"
+                Margin="16,0,0,0"
+                x:Name="BackButton" />
+        </ui:NavigationBar>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <Grid Margin="16,8,16,24">
+                <!--  Záhlaví stránky s názvem akcie  -->
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!--  Záhlaví stránky s názvem akcie a základními informacemi  -->
+                <Border Grid.Row="0" Style="{StaticResource CardStyle}">
+                    <StackPanel>
+                        <TextBlock
+                            FontSize="28"
+                            FontWeight="SemiBold"
+                            Foreground="{StaticResource HeaderTextBrush}"
+                            Margin="0,0,0,8"
+                            Text="{Binding Transaction.Ticker}" />
+                        <StackPanel Orientation="Horizontal" Spacing="16">
+                            <TextBlock
+                                FontSize="22"
+                                FontWeight="Bold"
+                                Foreground="{StaticResource AccentBrush}"
+                                Text="{Binding Transaction.Amount}" />
+                            <TextBlock
+                                FontSize="18"
+                                Foreground="#4CAF50"
+                                Text="{Binding Transaction.Reference}" />
+                            <TextBlock
+                                FontSize="16"
+                                Foreground="{StaticResource SubheaderTextBrush}"
+                                Text="{Binding Transaction.Status}"
+                                VerticalAlignment="Center" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!--  Navigační tabsy  -->
+                <Grid Grid.Row="1" Margin="0,12,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button
+                        Content="Přehled"
+                        Grid.Column="0"
+                        Style="{StaticResource TabButtonActiveStyle}" />
+                    <Button
+                        Content="Finanční ukazatele"
+                        Grid.Column="1"
+                        Style="{StaticResource TabButtonStyle}" />
+                    <Button
+                        Content="Transakce"
+                        Grid.Column="2"
+                        Style="{StaticResource TabButtonStyle}" />
+                </Grid>
+
+                <!--  Hlavní obsah  -->
+                <Grid Grid.Row="2">
+                    <!--  Obsah první záložky - Přehled  -->
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <!--  Graf ceny a SMA  -->
+                        <Border Grid.Row="0" Style="{StaticResource CardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock
+                                    Grid.Row="0"
+                                    Style="{StaticResource SubSectionHeaderStyle}"
+                                    Text="Historie ceny a SMA" />
+
+                                <mvux:FeedView Grid.Row="1" Source="{Binding ChartData}">
+                                    <mvux:FeedView.ValueTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="*" />
+                                                </Grid.RowDefinitions>
+
+                                                <!--  Časové filtry  -->
+                                                <StackPanel
+                                                    Grid.Row="0"
+                                                    HorizontalAlignment="Right"
+                                                    Margin="0,0,0,12"
+                                                    Orientation="Horizontal"
+                                                    Spacing="8">
+                                                    <Button
+                                                        Background="Transparent"
+                                                        BorderBrush="{StaticResource SubtleBorderBrush}"
+                                                        BorderThickness="1"
+                                                        Content="1T"
+                                                        CornerRadius="4"
+                                                        Padding="12,6" />
+                                                    <Button
+                                                        Background="Transparent"
+                                                        BorderBrush="{StaticResource SubtleBorderBrush}"
+                                                        BorderThickness="1"
+                                                        Content="1M"
+                                                        CornerRadius="4"
+                                                        Padding="12,6" />
+                                                    <Button
+                                                        Background="{StaticResource AccentBrush}"
+                                                        BorderThickness="0"
+                                                        Content="3M"
+                                                        CornerRadius="4"
+                                                        Padding="12,6" />
+                                                    <Button
+                                                        Background="Transparent"
+                                                        BorderBrush="{StaticResource SubtleBorderBrush}"
+                                                        BorderThickness="1"
+                                                        Content="1R"
+                                                        CornerRadius="4"
+                                                        Padding="12,6" />
+                                                    <Button
+                                                        Background="Transparent"
+                                                        BorderBrush="{StaticResource SubtleBorderBrush}"
+                                                        BorderThickness="1"
+                                                        Content="5R"
+                                                        CornerRadius="4"
+                                                        Padding="12,6" />
+                                                </StackPanel>
+
+                                                <charts:CartesianChart
+                                                    EasingFunction="{x:Null}"
+                                                    Grid.Row="1"
+                                                    Height="380"
+                                                    Series="{Binding Data.Series}"
+                                                    XAxes="{Binding Data.XAxes}"
+                                                    YAxes="{Binding Data.YAxes}"
+                                                    ZoomMode="X" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </mvux:FeedView.ValueTemplate>
+
+                                    <mvux:FeedView.ProgressTemplate>
+                                        <DataTemplate>
+                                            <ProgressRing
+                                                Height="48"
+                                                IsActive="True"
+                                                Width="48" />
+                                        </DataTemplate>
+                                    </mvux:FeedView.ProgressTemplate>
+                                    <mvux:FeedView.ErrorTemplate>
+                                        <DataTemplate>
+                                            <TextBlock
+                                                Foreground="{ThemeResource SystemColorErrorTextColor}"
+                                                HorizontalAlignment="Center"
+                                                Text="Chyba při načítání grafu" />
+                                        </DataTemplate>
+                                    </mvux:FeedView.ErrorTemplate>
+                                </mvux:FeedView>
+                            </Grid>
+                        </Border>
+
+                        <!--  Klíčové finanční ukazatele s gauge grafy  -->
+                        <Border Grid.Row="1" Style="{StaticResource CardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock
+                                    Grid.Row="0"
+                                    Style="{StaticResource SubSectionHeaderStyle}"
+                                    Text="Klíčové finanční ukazatele" />
+
+                                <mvux:FeedView Grid.Row="1" Source="{Binding GaugeFeed}">
+                                    <mvux:FeedView.ValueTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="*" />
+                                                </Grid.RowDefinitions>
+
+                                                <!--  Souhrn přesunutý nad grid s finančními ukazateli  -->
+                                                <Border
+                                                    Background="{ThemeResource CardBackgroundBrush}"
+                                                    BorderBrush="{ThemeResource SubtleBorderBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="16"
+                                                    Grid.Row="0"
+                                                    Margin="0,0,0,32"
+                                                    Padding="32">
+                                                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <TextBlock
+                                                            FontSize="28"
+                                                            FontWeight="Bold"
+                                                            Foreground="{StaticResource HeaderTextBrush}"
+                                                            Margin="0,0,0,20"
+                                                            Text="Souhrn hodnocení"
+                                                            TextAlignment="Center" />
+
+                                                        <TextBlock
+                                                            FontSize="24"
+                                                            FontWeight="Bold"
+                                                            Foreground="{StaticResource AccentBrush}"
+                                                            Margin="0,0,0,16"
+                                                            Text="{Binding Data.SummaryScore}"
+                                                            TextAlignment="Center" />
+
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            Foreground="{StaticResource BodyTextBrush}"
+                                                            LineHeight="28"
+                                                            Margin="0,0,0,0"
+                                                            Text="{Binding Data.SummaryDescription}"
+                                                            TextAlignment="Center"
+                                                            TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!--  Grid s finančními ukazateli  -->
+                                                <Grid Grid.Row="1">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <!--  EPS Gauge - První řádek, první sloupec  -->
+                                                    <Grid
+                                                        Grid.Column="0"
+                                                        Grid.Row="0"
+                                                        Margin="10">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="*" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+
+                                                        <StackPanel
+                                                            Grid.Row="0"
+                                                            HorizontalAlignment="Center"
+                                                            Orientation="Horizontal">
+                                                            <TextBlock
+                                                                HorizontalAlignment="Center"
+                                                                Style="{StaticResource LabelTextStyle}"
+                                                                Text="EPS (Earnings Per Share)" />
+                                                        </StackPanel>
+
+                                                        <lvc:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Grid.Row="1"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            Margin="16"
+                                                            MaxAngle="270"
+                                                            MaxValue="15"
+                                                            MinValue="-5"
+                                                            Series="{Binding Data.EpsGauge.Series}"
+                                                            VisualElements="{Binding Data.EpsGauge.VisualElements}"
+                                                            Width="200" />
+
+                                                        <StackPanel Grid.Row="2" HorizontalAlignment="Center">
+                                                            <TextBlock
+                                                                FontSize="20"
+                                                                FontWeight="SemiBold"
+                                                                Foreground="{StaticResource AccentBrush}"
+                                                                HorizontalAlignment="Center"
+                                                                Text="{Binding Data.EpsGauge.Value}" />
+                                                            <TextBlock
+                                                                FontSize="14"
+                                                                Foreground="{Binding Data.EpsGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=EPS}"
+                                                                HorizontalAlignment="Center"
+                                                                Margin="0,4,0,0"
+                                                                Text="{Binding Data.EpsGauge.Value, Converter={StaticResource EPSConverter}}" />
+                                                        </StackPanel>
+
+                                                        <!--  Vizuální oddělovač pro lepší přehlednost  -->
+                                                        <Border
+                                                            Background="{StaticResource SubtleBorderBrush}"
+                                                            Grid.Row="3"
+                                                            Height="1"
+                                                            Margin="0,15,0,0"
+                                                            Opacity="0.5" />
+                                                    </Grid>
+
+                                                    <!--  P/E Gauge - První řádek, druhý sloupec  -->
+                                                    <Grid
+                                                        Grid.Column="1"
+                                                        Grid.Row="0"
+                                                        Margin="10">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto" />
+                                                            <RowDefinition Height="*" />
+                                                            <RowDefinition Height="Auto" />
+                                                        </Grid.RowDefinitions>
+
+                                                        <StackPanel
+                                                            Grid.Row="0"
+                                                            HorizontalAlignment="Center"
+                                                            Orientation="Horizontal">
+                                                            <TextBlock
+                                                                HorizontalAlignment="Center"
+                                                                Style="{StaticResource LabelTextStyle}"
+                                                                Text="P/E (Price to Earnings)" />
+                                                        </StackPanel>
+
+                                                        <lvc:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Grid.Row="1"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            Margin="16"
+                                                            MaxAngle="270"
+                                                            MaxValue="40"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.PeGauge.Series}"
+                                                            VisualElements="{Binding Data.PeGauge.VisualElements}"
+                                                            Width="200" />
+
+                                                        <StackPanel Grid.Row="2" HorizontalAlignment="Center">
+                                                            <TextBlock
+                                                                FontSize="20"
+                                                                FontWeight="SemiBold"
+                                                                Foreground="{StaticResource AccentBrush}"
+                                                                HorizontalAlignment="Center"
+                                                                Text="{Binding Data.PeGauge.Value}" />
+                                                            <TextBlock
+                                                                FontSize="14"
+                                                                Foreground="{Binding Data.PeGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=PE}"
+                                                                HorizontalAlignment="Center"
+                                                                Margin="0,4,0,0"
+                                                                Text="{Binding Data.PeGauge.Value, Converter={StaticResource PERatioConverter}}" />
+                                                        </StackPanel>
+                                                    </Grid>
+
+                                                    <!--  PEG Ratio - Druhý řádek, první sloupec  -->
+                                                    <StackPanel
+                                                        Grid.Column="0"
+                                                        Grid.Row="1"
+                                                        Margin="10,20,10,20">
+                                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontSize="16"
+                                                                FontWeight="SemiBold"
+                                                                HorizontalAlignment="Center"
+                                                                Text="PEG Ratio" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            FontWeight="Bold"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,5,0,5"
+                                                            Text="{Binding Data.PegGauge.Value}" />
+                                                        <charts:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            Margin="0,10,0,10"
+                                                            MaxAngle="270"
+                                                            MaxValue="4"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.PegGauge.Series}"
+                                                            VisualElements="{Binding Data.PegGauge.VisualElements}"
+                                                            Width="200" />
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            Foreground="{Binding Data.PegGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=PEG}"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,4,0,0"
+                                                            Text="{Binding Data.PegGauge.Value, Converter={StaticResource PEGRatioConverter}}" />
+                                                    </StackPanel>
+
+                                                    <!--  P/S Ratio - Čtvrtý řádek, první sloupec  -->
+                                                    <StackPanel
+                                                        Grid.Column="0"
+                                                        Grid.Row="4"
+                                                        Margin="10,20,10,20">
+                                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontSize="16"
+                                                                FontWeight="SemiBold"
+                                                                HorizontalAlignment="Center"
+                                                                Text="P/S Ratio" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            FontWeight="Bold"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,5,0,5"
+                                                            Text="{Binding Data.PriceToSalesGauge.Value}" />
+                                                        <charts:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            Margin="0,10,0,10"
+                                                            MaxAngle="270"
+                                                            MaxValue="15"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.PriceToSalesGauge.Series}"
+                                                            VisualElements="{Binding Data.PriceToSalesGauge.VisualElements}"
+                                                            Width="200" />
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            Foreground="{Binding Data.PriceToSalesGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=PS}"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,4,0,0"
+                                                            Text="{Binding Data.PriceToSalesGauge.Value, Converter={StaticResource PriceToSalesConverter}}" />
+                                                    </StackPanel>
+
+                                                    <!--  Beta Gauge - Pátý řádek, 1. sloupec  -->
+                                                    <StackPanel
+                                                        Grid.Column="0"
+                                                        Grid.Row="5"
+                                                        Margin="10,20,10,20">
+                                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontSize="16"
+                                                                FontWeight="SemiBold"
+                                                                HorizontalAlignment="Center"
+                                                                Text="Beta" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            FontWeight="Bold"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,5,0,5"
+                                                            Text="{Binding Data.BetaGauge.Value}" />
+                                                        <charts:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            Margin="0,10,0,10"
+                                                            MaxAngle="270"
+                                                            MaxValue="2"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.BetaGauge.Series}"
+                                                            VisualElements="{Binding Data.BetaGauge.VisualElements}"
+                                                            Width="200" />
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            Foreground="{Binding Data.BetaGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=Beta}"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,4,0,0"
+                                                            Text="{Binding Data.BetaGauge.Value, Converter={StaticResource BetaConverter}}" />
+                                                    </StackPanel>
+
+                                                    <!--  ROE - Druhý řádek, druhý sloupec  -->
+                                                    <StackPanel
+                                                        Grid.Column="1"
+                                                        Grid.Row="1"
+                                                        Margin="10,20,10,20">
+                                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontSize="16"
+                                                                FontWeight="SemiBold"
+                                                                HorizontalAlignment="Center"
+                                                                Text="ROE" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            FontWeight="Bold"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,5,0,5"
+                                                            Text="{Binding Data.RoeGauge.Value}" />
+                                                        <charts:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            Margin="0,10,0,10"
+                                                            MaxAngle="270"
+                                                            MaxValue="60"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.RoeGauge.Series}"
+                                                            VisualElements="{Binding Data.RoeGauge.VisualElements}"
+                                                            Width="200" />
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            Foreground="{Binding Data.RoeGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=ROE}"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,4,0,0"
+                                                            Text="{Binding Data.RoeGauge.Value, Converter={StaticResource ROEConverter}}" />
+                                                    </StackPanel>
+
+                                                    <!--  ROA - Čtvrtý řádek, druhý sloupec  -->
+                                                    <StackPanel
+                                                        Grid.Column="1"
+                                                        Grid.Row="4"
+                                                        Margin="10,20,10,20">
+                                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontSize="16"
+                                                                FontWeight="SemiBold"
+                                                                HorizontalAlignment="Center"
+                                                                Text="ROA" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            FontWeight="Bold"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,5,0,5"
+                                                            Text="{Binding Data.RoaGauge.Value}" />
+                                                        <charts:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            Margin="0,10,0,10"
+                                                            MaxAngle="270"
+                                                            MaxValue="30"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.RoaGauge.Series}"
+                                                            VisualElements="{Binding Data.RoaGauge.VisualElements}"
+                                                            Width="200" />
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            Foreground="{Binding Data.RoaGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=ROA}"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,4,0,0"
+                                                            Text="{Binding Data.RoaGauge.Value, Converter={StaticResource ROAConverter}}" />
+                                                    </StackPanel>
+
+                                                    <!--  Reservovaný prostor byl odstraněn, protože není potřeba  -->
+
+                                                    <!--  Nahrazeno správným umístěním do existujícího layoutu  -->
+
+                                                    <!--  Profit Margin - Třetí řádek, první sloupec  -->
+                                                    <StackPanel
+                                                        Grid.Column="0"
+                                                        Grid.Row="2"
+                                                        Margin="5,20,5,5">
+                                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontSize="16"
+                                                                FontWeight="SemiBold"
+                                                                HorizontalAlignment="Center"
+                                                                Text="Zisková marže" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            FontWeight="Bold"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,5,0,5"
+                                                            Text="{Binding Data.ProfitMarginGauge.Value}" />
+                                                        <charts:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            MaxAngle="270"
+                                                            MaxValue="50"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.ProfitMarginGauge.Series}"
+                                                            VisualElements="{Binding Data.ProfitMarginGauge.VisualElements}" />
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            Foreground="{Binding Data.ProfitMarginGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=ProfitMargin}"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,4,0,0"
+                                                            Text="{Binding Data.ProfitMarginGauge.Value, Converter={StaticResource ProfitMarginConverter}}" />
+                                                    </StackPanel>
+
+                                                    <!--  Dividend Yield - Třetí řádek, druhý sloupec  -->
+                                                    <StackPanel
+                                                        Grid.Column="1"
+                                                        Grid.Row="2"
+                                                        Margin="10,20,10,20">
+                                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontSize="16"
+                                                                FontWeight="SemiBold"
+                                                                HorizontalAlignment="Center"
+                                                                Text="Dividendový výnos" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            FontWeight="Bold"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,5,0,5"
+                                                            Text="{Binding Data.DividendYieldGauge.Value}" />
+                                                        <charts:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            MaxAngle="270"
+                                                            MaxValue="12"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.DividendYieldGauge.Series}"
+                                                            VisualElements="{Binding Data.DividendYieldGauge.VisualElements}"
+                                                            Width="200" />
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            Foreground="{Binding Data.DividendYieldGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=DividendYield}"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,4,0,0"
+                                                            Text="{Binding Data.DividendYieldGauge.Value, Converter={StaticResource DividendYieldConverter}}" />
+                                                    </StackPanel>
+
+                                                    <!--  Odstraněno - duplicitní sekce pro P/S Ratio  -->
+
+                                                    <!--  Prázdný prostor místo odstraněného grafu zadlužení  -->
+
+                                                    <!--  Prázdný prostor místo odstraněného grafu likvidity  -->
+
+                                                    <!--  EV/EBITDA - Přidaný nový ukazatel  -->
+                                                    <StackPanel
+                                                        Grid.Column="0"
+                                                        Grid.Row="3"
+                                                        Margin="10,20,10,20">
+                                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontSize="16"
+                                                                FontWeight="SemiBold"
+                                                                HorizontalAlignment="Center"
+                                                                Text="EV/EBITDA" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            FontWeight="Bold"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,5,0,5"
+                                                            Text="{Binding Data.EVToEBITDAGauge.Value}" />
+                                                        <charts:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            Margin="0,10,0,10"
+                                                            MaxAngle="270"
+                                                            MaxValue="26"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.EVToEBITDAGauge.Series}"
+                                                            VisualElements="{Binding Data.EVToEBITDAGauge.VisualElements}"
+                                                            Width="200" />
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            Foreground="{Binding Data.EVToEBITDAGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=EVEBITDA}"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,4,0,0"
+                                                            Text="{Binding Data.EVToEBITDAGauge.Value, Converter={StaticResource EVToEBITDAConverter}}" />
+                                                    </StackPanel>
+
+                                                    <!--  Operating Margin - Čtvrtý řádek, druhý sloupec  -->
+                                                    <StackPanel
+                                                        Grid.Column="1"
+                                                        Grid.Row="3"
+                                                        Margin="10,20,10,20">
+                                                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                            <TextBlock
+                                                                FontSize="16"
+                                                                FontWeight="SemiBold"
+                                                                HorizontalAlignment="Center"
+                                                                Text="Provozní marže" />
+                                                        </StackPanel>
+                                                        <TextBlock
+                                                            FontSize="18"
+                                                            FontWeight="Bold"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,5,0,5"
+                                                            Text="{Binding Data.OperatingMarginGauge.Value}" />
+                                                        <charts:PieChart
+                                                            EasingFunction="{x:Null}"
+                                                            Height="200"
+                                                            InitialRotation="-225"
+                                                            Margin="0,10,0,10"
+                                                            MaxAngle="270"
+                                                            MaxValue="50"
+                                                            MinValue="0"
+                                                            Series="{Binding Data.OperatingMarginGauge.Series}"
+                                                            VisualElements="{Binding Data.OperatingMarginGauge.VisualElements}"
+                                                            Width="200" />
+                                                        <TextBlock
+                                                            FontSize="14"
+                                                            Foreground="{Binding Data.OperatingMarginGauge.Value, Converter={StaticResource NeedleToColorConverter}, ConverterParameter=OperatingMargin}"
+                                                            HorizontalAlignment="Center"
+                                                            Margin="0,4,0,0"
+                                                            Text="{Binding Data.OperatingMarginGauge.Value, Converter={StaticResource OperatingMarginConverter}}" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </mvux:FeedView.ValueTemplate>
+
+                                    <mvux:FeedView.ProgressTemplate>
+                                        <DataTemplate>
+                                            <ProgressRing
+                                                Height="48"
+                                                IsActive="True"
+                                                Width="48" />
+                                        </DataTemplate>
+                                    </mvux:FeedView.ProgressTemplate>
+                                    <mvux:FeedView.ErrorTemplate>
+                                        <DataTemplate>
+                                            <TextBlock
+                                                Foreground="{ThemeResource SystemColorErrorTextColor}"
+                                                HorizontalAlignment="Center"
+                                                Text="Chyba při načítání dat" />
+                                        </DataTemplate>
+                                    </mvux:FeedView.ErrorTemplate>
+                                </mvux:FeedView>
+                            </Grid>
+                        </Border>
+
+                        <!--  Detailní informace o transakci  -->
+                        <Border Grid.Row="2" Style="{StaticResource CardStyle}">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock
+                                    Grid.Row="0"
+                                    Style="{StaticResource SubSectionHeaderStyle}"
+                                    Text="Detail transakce" />
+
+                                <Grid Grid.Row="1">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!--  Levý sloupec detailů  -->
+                                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                        <TextBlock Style="{StaticResource LabelTextStyle}" Text="Popis:" />
+                                        <TextBlock Style="{StaticResource ValueTextStyle}" Text="{Binding Transaction.Description}" />
+
+                                        <TextBlock Style="{StaticResource LabelTextStyle}" Text="Datum:" />
+                                        <TextBlock Style="{StaticResource ValueTextStyle}" Text="{Binding Transaction.Date}" />
+                                    </StackPanel>
+
+                                    <!--  Pravý sloupec detailů  -->
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Style="{StaticResource LabelTextStyle}" Text="Částka:" />
+                                        <TextBlock
+                                            FontWeight="SemiBold"
+                                            Foreground="#4CAF50"
+                                            Style="{StaticResource ValueTextStyle}"
+                                            Text="{Binding Transaction.Amount}" />
+
+                                        <TextBlock Style="{StaticResource LabelTextStyle}" Text="Stav:" />
+                                        <Grid Margin="0,0,0,16">
+                                            <Border
+                                                Background="#E8F5E9"
+                                                CornerRadius="4"
+                                                HorizontalAlignment="Left"
+                                                Padding="12,6">
+                                                <TextBlock
+                                                    FontWeight="SemiBold"
+                                                    Foreground="#2E7D32"
+                                                    Text="{Binding Transaction.Status}" />
+                                            </Border>
+                                        </Grid>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</Page>

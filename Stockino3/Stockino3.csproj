@@ -1,0 +1,115 @@
+<Project Sdk="Uno.Sdk">
+    <PropertyGroup>
+        <TargetFrameworks>net9.0-android;net9.0-ios;net9.0-maccatalyst;net9.0-windows10.0.26100;net9.0-browserwasm;net9.0-desktop</TargetFrameworks>
+
+        <OutputType>Exe</OutputType>
+        <UnoSingleProject>true</UnoSingleProject>
+
+        <!-- Display name -->
+        <ApplicationTitle>Stockino3</ApplicationTitle>
+        <!-- App Identifier -->
+        <ApplicationId>com.companyname.Stockino3</ApplicationId>
+        <!-- Versions -->
+        <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+        <ApplicationVersion>1</ApplicationVersion>
+        <!-- Package Publisher -->
+        <ApplicationPublisher>O=Stockino3</ApplicationPublisher>
+        <!-- Package Description -->
+        <Description>Stockino3 powered by Uno Platform.</Description>
+        <!--
+          If you encounter this error message:
+
+            error NETSDK1148: A referenced assembly was compiled using a newer version of Microsoft.Windows.SDK.NET.dll.
+            Please update to a newer .NET SDK in order to reference this assembly.
+
+          This means that the two packages below must be aligned with the "build" version number of
+          the "Microsoft.Windows.SDK.BuildTools" package above, and the "revision" version number
+          must be the highest found in https://www.nuget.org/packages/Microsoft.Windows.SDK.NET.Ref.
+        -->
+        <!-- <WindowsSdkPackageVersion>10.0.22621.28</WindowsSdkPackageVersion> -->
+
+        <!--
+          UnoFeatures let's you quickly add and manage implicit package references based on the features you want to use.
+          https://aka.platform.uno/singleproject-features
+        -->
+        <UnoFeatures>
+            Material;
+            Dsp;
+            Hosting;
+            Toolkit;
+            Logging;
+            MVUX;
+            Configuration;
+            Http;
+            Serialization;
+            Localization;
+            Navigation;
+            ThemeService;
+        </UnoFeatures>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="AlphaVantage.Net.Core" />
+        <PackageReference Include="AlphaVantage.Net.Stocks" />
+        <PackageReference Include="ClosedXML" />
+        <PackageReference Include="CsvHelper" />
+        <PackageReference Include="EPPlus" />
+        <PackageReference Include="LiveChartsCore" />
+        <PackageReference Include="LiveChartsCore.Behaviours" />
+        <PackageReference Include="LiveChartsCore.SkiaSharpView" />
+        <PackageReference Include="LiveChartsCore.SkiaSharpView.Uno.WinUI" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" />
+        <PackageReference Include="Skender.Stock.Indicators" />
+        <PackageReference Include="Uno.Extensions.Navigation" />
+        <PackageReference Include="Uno.Extensions.Reactive" />
+        <PackageReference Include="Uno.Microsoft.Xaml.Behaviors.WinUI.Managed" />
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Update="Presentation\TransactionsPage.xaml.cs">
+            <DependentUpon>TransactionsPage.xaml</DependentUpon>
+            <IsDefaultItem>true</IsDefaultItem>
+        </Compile>
+        <Compile Remove="Presentation\SelectedFilterToBrushConverter.cs" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-windows10.0.26100'">
+        <PackageReference Include="CommunityToolkit.WinUI.UI.Controls.DataGrid" />
+        <PackageReference Include="Microsoft.WindowsAppSDK" />
+    </ItemGroup>
+    <ItemGroup>
+        <Reference Include="Uno.UI.HotDesign.Xaml.Interactivity">
+            <HintPath>..\..\..\.nuget\packages\uno.ui.hotdesign\1.5.62\lib\net8.0-windows10.0.19041\Uno.UI.HotDesign.Xaml.Interactivity.dll</HintPath>
+        </Reference>
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-android'">
+        <PackageReference Include="SkiaSharp.Skottie" />
+        <PackageReference Include="SkiaSharp.Views.Uno.WinUI" />
+        <PackageReference Include="Uno.Fonts.OpenSans" />
+        <PackageReference Include="Xamarin.AndroidX.Activity" />
+        <PackageReference Include="Xamarin.AndroidX.AppCompat" />
+        <PackageReference Include="Xamarin.AndroidX.Browser" />
+        <PackageReference Include="Xamarin.AndroidX.Legacy.Support.V4" />
+        <PackageReference Include="Xamarin.AndroidX.RecyclerView" />
+        <PackageReference Include="Xamarin.AndroidX.SwipeRefreshLayout" />
+        <PackageReference Include="Xamarin.Google.Android.Material" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-desktop'">
+        <PackageReference Include="SkiaSharp.Skottie" />
+        <PackageReference Include="SkiaSharp.Views.Uno.WinUI" />
+        <PackageReference Include="Uno.Fonts.OpenSans" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-ios'">
+        <PackageReference Include="SkiaSharp.Skottie" />
+        <PackageReference Include="SkiaSharp.Views.Uno.WinUI" />
+        <PackageReference Include="Uno.Fonts.OpenSans" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-maccatalyst'">
+        <PackageReference Include="SkiaSharp.Skottie" />
+        <PackageReference Include="SkiaSharp.Views.Uno.WinUI" />
+        <PackageReference Include="Uno.Fonts.OpenSans" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(TargetFramework)' == 'net9.0-browserwasm'">
+      <PackageReference Include="Uno.Fonts.OpenSans" />
+    </ItemGroup>
+
+</Project>
