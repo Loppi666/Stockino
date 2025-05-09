@@ -114,7 +114,16 @@
                     Orientation="Vertical"
                     Spacing="8"
                     VerticalAlignment="Center">
+                    <!--  Výběr providera  -->
+                    <ComboBox
+                        HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding Providers}"
+                        Margin="0,0,0,4"
+                        PlaceholderText="Vyberte providera"
+                        SelectedItem="{Binding SelectedProvider, Mode=TwoWay}"
+                        x:Name="ProviderComboBox" />
                     <Button
+                        Command="{Binding OnSelectFile}"
                         Content="Importovat transakce ze souboru"
                         CornerRadius="10"
                         HorizontalAlignment="Stretch"

@@ -1,7 +1,7 @@
 public static class AlphaData
 {
     public static Dictionary<string, (string Suffix, string Currency)> alphaVantageData =
-        new Dictionary<string, (string, string)>
+        new()
         {
             { "3579", (".L", "GBP") }, // SSY FUTURES LTD -  FREIGHT SCREEN
             { "21XX", (".DE", "EUR") }, // 21X

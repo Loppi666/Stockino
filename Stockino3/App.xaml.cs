@@ -42,6 +42,11 @@ public partial class App : Application
                         {
                             services.AddSingleton<Analyze>();
                             services.AddTransient<TransactionsModel>();
+                            services.AddTransient<AnyCoinTransactionLoader>();
+                            services.AddTransient<XtbParser>();
+                            
+                            
+                            
                             services.AddTransient<TransactionDetailModel>();
                             services.AddDbContext<TransactionContext>(options =>
                                 options.UseSqlite($"Data Source={databasePath}"));
@@ -117,6 +122,14 @@ public partial class App : Application
         MainWindow.SetWindowIcon();
 
         Host = await builder.NavigateAsync<Shell>();
+        
+        // Ensure database is created
+        using (var scope = Host.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            var transactionContext = services.GetRequiredService<TransactionContext>();
+            await transactionContext.Database.EnsureCreatedAsync();
+        }
     }
 
     private static void RegisterRoutes(IViewRegistry views, IRouteRegistry routes)
@@ -143,4 +156,3 @@ public partial class App : Application
     }
     
 }
-

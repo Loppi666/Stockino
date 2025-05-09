@@ -1,34 +1,66 @@
-using System.Globalization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
-using AlphaVantage.Net.Core.Client;
-using AlphaVantage.Net.Stocks;
-using AlphaVantage.Net.Stocks.Client;
+using System.Threading.Tasks;
 using ClosedXML.Excel;
-using CsvHelper;
-using CsvHelper.Configuration;
-using CsvHelper.Configuration.Attributes;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json.Linq;
-using OfficeOpenXml;
-
 
 namespace Stockino3.Services;
 
-public class Analyze
+public class XtbParser
 {
     private readonly TransactionContext transactionContext;
+    private static readonly HttpClient httpClient = new();
 
-    public Analyze(TransactionContext transactionContext)
+    public XtbParser(TransactionContext transactionContext)
     {
         this.transactionContext = transactionContext;
     }
 
-    private const string ApiKey = "9E71JJDSQDAD5CZR";
+    public async Task ParseXtb(string csvFile)
+    {
+        var transactions = await ParseXlsx(csvFile, "OPEN POSITION 04032025");
 
-    private static readonly HttpClient httpClient = new();
+        try
+        {
+            await using var db = transactionContext;
+            await db.Database.EnsureCreatedAsync();
+            db.Transactions.AddRange(transactions);
 
-    public async Task<List<TransactionEntity>> ParseXlsx(string filePath, string sheetName)
+            // Get existing products and transactions
+            var existingProducts = await db.Products
+                                           .Include(p => p.Transactions)
+                                           .Where(p => transactions.Select(t => t.Product.Symbol).Contains(p.Symbol))
+                                           .ToListAsync();
+
+            // Filter out transactions that already exist in the database
+            var newTransactions = transactions
+                                 .Where(t => !existingProducts.Any(ep =>
+                                                                       ep.Symbol == t.Product.Symbol &&
+                                                                       ep.Transactions.Any(et => et.ExecutionTime == t.ExecutionTime)))
+                                 .ToList();
+
+            if (newTransactions.Any())
+            {
+                db.Transactions.AddRange(newTransactions);
+                await db.SaveChangesAsync();
+                Console.WriteLine($"Added {newTransactions.Count} new transactions to the database.");
+            }
+            else
+            {
+                Console.WriteLine("No new transactions to add.");
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+    }
+
+    private async Task<List<TransactionEntity>> ParseXlsx(string filePath, string sheetName)
     {
         var transactions = new List<TransactionEntity>();
 
@@ -36,9 +68,9 @@ public class Analyze
 
         // Find worksheets with names containing "open position" or "close position"
         var openPositionSheet = workbook.Worksheets.FirstOrDefault(ws =>
-            ws.Name.Contains("OPEN POSITION", StringComparison.OrdinalIgnoreCase));
+                                                                       ws.Name.Contains("OPEN POSITION", StringComparison.OrdinalIgnoreCase));
         var closePositionSheet = workbook.Worksheets.FirstOrDefault(ws =>
-            ws.Name.Contains("CLOSED POSITION", StringComparison.OrdinalIgnoreCase));
+                                                                        ws.Name.Contains("CLOSED POSITION", StringComparison.OrdinalIgnoreCase));
 
         // Use open position sheet if available, otherwise use the first available worksheet
         var worksheet = openPositionSheet ?? workbook.Worksheets.FirstOrDefault();
@@ -116,134 +148,10 @@ public class Analyze
         return transactions;
     }
 
-
-    public async Task PerformeAnalyze(string csvFile)
-    {
-        await transactionContext.Database.EnsureCreatedAsync();
-
-        var config = new CsvConfiguration(CultureInfo.InvariantCulture)
-        {
-            Delimiter = ",",
-            HasHeaderRecord = true,
-            MissingFieldFound = null
-        };
-
-        List<TransactionEntity> transactions;
-        try
-        {
-            using var reader = new StreamReader(csvFile);
-            using var csv = new CsvReader(reader, config);
-            csv.Read();
-            csv.ReadHeader();
-            // Get existing products and transactions
-            var transactionModels = csv.GetRecords<TransactionCsvModel>()
-                .Where(x => !x.ISIN.IsNullOrEmpty())
-                .ToList();
-
-            var uniqueProducts = transactionModels
-                .Where(x => !string.IsNullOrEmpty(x.ISIN) && !string.IsNullOrEmpty(x.Exchange))
-                .GroupBy(x => new { x.ISIN, x.Exchange })
-                .Select(g => g.First())
-                .ToList();
-
-// Pre-load all products to avoid creating duplicates
-            foreach (var model in uniqueProducts)
-            {
-                await GetOrCreateProduct(model.ISIN, model.Product, model.ISIN, model.Exchange);
-            }
-
-
-            transactions = new List<TransactionEntity>();
-            foreach (var model in transactionModels)
-            {
-                transactions.Add(await MapCsvToEntity(model));
-            }
-
-
-            // Get existing transactions from database
-            var existingTransactions = await transactionContext.Transactions
-                .ToListAsync();
-
-// Filter out transactions that already exist by checking key transaction properties
-            var newTransactions = transactions
-                .Where(t => !existingTransactions.Any(et =>
-                    et.ProductId == t.ProductId &&
-                    et.ExecutionTime == t.ExecutionTime &&
-                    et.OperationType == t.OperationType &&
-                    Math.Abs(et.Volume - t.Volume) < 0.001 &&
-                    Math.Abs(et.Price - t.Price) < 0.001))
-                .ToList();
-
-            if (newTransactions.Any())
-            {
-                transactionContext.Transactions.AddRange(newTransactions);
-                await transactionContext.SaveChangesAsync();
-                Console.WriteLine($"Added {newTransactions.Count} new transactions to the database.");
-            }
-            else
-            {
-                Console.WriteLine("No new transactions to add.");
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            throw;
-        }
-
-        // Přesunuto do XtbParser
-        var xtbParser = new XtbParser(transactionContext);
-        await xtbParser.ParseXtb(csvFile);
-    }
-
-
-    private async Task<TransactionEntity> MapCsvToEntity(TransactionCsvModel csvModel)
-    {
-        // Parse the date and time
-        DateTime executionTime;
-        if (!string.IsNullOrEmpty(csvModel.Time))
-        {
-            // If time is available, combine with date
-            executionTime = DateTime.ParseExact(
-                $"{csvModel.DateString} {csvModel.Time}",
-                "dd-MM-yyyy HH:mm",
-                CultureInfo.InvariantCulture);
-        }
-        else
-        {
-            // If only date is available
-            executionTime = csvModel.Date;
-        }
-
-        // Determine operation type based on quantity (negative is CLOSE/sell, positive is OPEN/buy)
-        var operationType = csvModel.Quantity < 0 ? OperationType.CLOSE : OperationType.OPEN;
-
-        // Get or create the product
-        var symbol = csvModel.ISIN ?? csvModel.Product;
-        var product = await GetOrCreateProduct(symbol, csvModel.Product, csvModel.ISIN, csvModel.Exchange);
-
-
-        return new TransactionEntity
-        {
-            ProductId = product.Id,
-            OperationType = operationType,
-            Volume = Math.Abs(csvModel.Quantity), // Use absolute value for volume
-            ExecutionTime = executionTime,
-            Price = csvModel.Price,
-            Currency = csvModel.TotalCurreny,
-            // Other fields don't have direct mappings in CSV, so leaving as null
-            Margin = null,
-            Commission = null,
-            Swap = null,
-            GrossPL = null
-        };
-    }
-
-
     private async Task<ProductEntity> GetOrCreateProduct(string symbol, string name, string isin, string echange)
     {
         var product = await transactionContext.Products
-            .FirstOrDefaultAsync(p => p.Symbol == symbol);
+                                              .FirstOrDefaultAsync(p => p.Symbol == symbol);
 
         if (product == null)
         {
@@ -366,114 +274,5 @@ public class Analyze
             Console.WriteLine($"Error fetching ticker for ISIN {isin} on {exchange}: {ex.Message}");
             return ("Error", "");
         }
-    }
-
-
-    // Polygon.io response models
-    public class PolygonSearchResponse
-    {
-        public List<PolygonTickerResult> Results { get; set; }
-    }
-
-    public class PolygonTickerResult
-    {
-        public string Ticker { get; set; }
-        public string Name { get; set; }
-        public string Currency { get; set; }
-        public string Market { get; set; }
-    }
-}
-
-public enum OperationType
-{
-    OPEN,
-    CLOSE
-}
-
-class TransactionCsvModel
-{
-    [Name("Datum")] public string DateString { get; set; }
-    public DateTime Date => DateTime.ParseExact(DateString, "dd-MM-yyyy", CultureInfo.InvariantCulture);
-
-    [Name("Čas")] public string Time { get; set; }
-
-    [Name("Produkt")] public string Product { get; set; }
-
-    [Name("ISIN")] public string ISIN { get; set; }
-
-    [Name("Reference")] public string Reference { get; set; }
-
-    [Name("Venue")] public string Exchange { get; set; }
-
-    [Name("Počet")] public string QuantityString { get; set; }
-    public int Quantity => int.TryParse(QuantityString, out int value) ? value : 0;
-
-    [Name("Cena")] public string PriceString { get; set; }
-
-    public double Price =>
-        double.TryParse(PriceString.Split(',')[0], NumberStyles.Any, CultureInfo.InvariantCulture, out double value)
-            ? value
-            : 0;
-
-    [Name("Hodnota v domácí měně")] public string LocalValueString { get; set; }
-
-    public double LocalValue => double.TryParse(LocalValueString.Split(',')[0], NumberStyles.Any,
-        CultureInfo.InvariantCulture, out double value)
-        ? value
-        : 0;
-
-    [Name("Hodnota")] public string ValueString { get; set; }
-
-    public double Value =>
-        double.TryParse(ValueString.Split(',')[0], NumberStyles.Any, CultureInfo.InvariantCulture, out double value)
-            ? value
-            : 0;
-
-    [CsvHelper.Configuration.Attributes.Index(13)]
-    public string ValueCurreny { get; set; }
-
-    [Name("Směnný kurz")] public string ExchangeRateString { get; set; }
-
-    public double ExchangeRate =>
-        double.TryParse(ExchangeRateString, NumberStyles.Any, CultureInfo.InvariantCulture, out double value)
-            ? value
-            : 1;
-
-
-    [Name("Transaction and/or third")] public string TransactionFeeString { get; set; }
-
-    public double TransactionFee => double.TryParse(TransactionFeeString.Split(',')[0], NumberStyles.Any,
-        CultureInfo.InvariantCulture, out double value)
-        ? Math.Abs(value)
-        : 0;
-
-    [CsvHelper.Configuration.Attributes.Index(15)]
-    public string TransactionFeeCurreny { get; set; }
-
-
-    [Name("Celkem")] public string TotalString { get; set; }
-
-    public double Total =>
-        double.TryParse(TotalString.Split(',')[0], NumberStyles.Any, CultureInfo.InvariantCulture, out double value)
-            ? value
-            : 0;
-
-    [CsvHelper.Configuration.Attributes.Index(18)]
-    public string TotalCurreny { get; set; }
-}
-
-public class TransactionContext(DbContextOptions<TransactionContext> options) : DbContext(options)
-{
-    public DbSet<TransactionEntity> Transactions { get; set; }
-    public DbSet<ProductEntity> Products { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<TransactionEntity>()
-            .HasOne(t => t.Product)
-            .WithMany(p => p.Transactions)
-            .HasForeignKey(t => t.ProductId);
-
-        base.OnModelCreating(modelBuilder);
     }
 }
