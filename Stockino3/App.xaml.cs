@@ -49,7 +49,8 @@ public partial class App : Application
                             
                             services.AddTransient<TransactionDetailModel>();
                             services.AddDbContext<TransactionContext>(options =>
-                                options.UseSqlite($"Data Source={databasePath}"));
+                                options.UseSqlite($"Data Source={databasePath}"),
+                                                                      ServiceLifetime.Transient);
 
                     
                             

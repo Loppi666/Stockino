@@ -28,98 +28,10 @@ public class Analyze
 
     private static readonly HttpClient httpClient = new();
 
-    public async Task<List<TransactionEntity>> ParseXlsx(string filePath, string sheetName)
-    {
-        var transactions = new List<TransactionEntity>();
-
-        using var workbook = new XLWorkbook(filePath);
-
-        // Find worksheets with names containing "open position" or "close position"
-        var openPositionSheet = workbook.Worksheets.FirstOrDefault(ws =>
-            ws.Name.Contains("OPEN POSITION", StringComparison.OrdinalIgnoreCase));
-        var closePositionSheet = workbook.Worksheets.FirstOrDefault(ws =>
-            ws.Name.Contains("CLOSED POSITION", StringComparison.OrdinalIgnoreCase));
-
-        // Use open position sheet if available, otherwise use the first available worksheet
-        var worksheet = openPositionSheet ?? workbook.Worksheets.FirstOrDefault();
-
-        if (worksheet == null) return transactions;
-
-        int rowCount = worksheet.LastRowUsed().RowNumber() - 1;
-        for (int row = 12; row <= rowCount; row++) // Assuming first row is headers
-        {
-            string symbol = worksheet.Cell(row, 3).GetString();
-            string name = worksheet.Cell(row, 3).GetString();
-
-            // Get or create product from database
-            var product = await GetOrCreateProduct(symbol, name, null, null);
-
-            var transaction = new TransactionEntity()
-            {
-                ProductId = product.Id,
-                Product = product,
-                OperationType = OperationType.OPEN,
-                Volume = double.TryParse(worksheet.Cell(row, 5).GetString(), out double volume)
-                    ? volume
-                    : default(double),
-                ExecutionTime = DateTime.Parse(worksheet.Cell(row, 6).GetString()),
-                Price = double.TryParse(worksheet.Cell(row, 7).GetString(), out double price) ? price : default(double),
-                Margin =
-                    double.TryParse(worksheet.Cell(row, 8).GetString(), out double margin) ? margin : (double?)null,
-                Commission = double.TryParse(worksheet.Cell(row, 9).GetString(), out double commission)
-                    ? commission
-                    : (double?)null,
-                Swap = double.TryParse(worksheet.Cell(row, 10).GetString(), out double swap) ? swap : (double?)null,
-                GrossPL = double.TryParse(worksheet.Cell(row, 11).GetString(), out double grossPL)
-                    ? grossPL
-                    : (double?)null
-            };
-            transactions.Add(transaction);
-        }
-
-        worksheet = closePositionSheet ?? workbook.Worksheets.FirstOrDefault();
-
-        if (worksheet == null) return transactions;
-
-        rowCount = worksheet.LastRowUsed().RowNumber() - 1;
-        for (int row = 14; row <= rowCount; row++) // Assuming first row is headers
-        {
-            string symbol = worksheet.Cell(row, 3).GetString();
-            string name = worksheet.Cell(row, 3).GetString();
-
-            // Get or create product from database
-            var product = await GetOrCreateProduct(symbol, name, null, null);
-
-            var transaction = new TransactionEntity()
-            {
-                ProductId = product.Id,
-                Product = product,
-                OperationType = OperationType.OPEN,
-                Volume = double.TryParse(worksheet.Cell(row, 5).GetString(), out double volume)
-                    ? volume
-                    : default(double),
-                ExecutionTime = DateTime.Parse(worksheet.Cell(row, 6).GetString()),
-                Price = double.TryParse(worksheet.Cell(row, 7).GetString(), out double price) ? price : default(double),
-                Margin =
-                    double.TryParse(worksheet.Cell(row, 8).GetString(), out double margin) ? margin : (double?)null,
-                Commission = double.TryParse(worksheet.Cell(row, 9).GetString(), out double commission)
-                    ? commission
-                    : (double?)null,
-                Swap = double.TryParse(worksheet.Cell(row, 10).GetString(), out double swap) ? swap : (double?)null,
-                GrossPL = double.TryParse(worksheet.Cell(row, 11).GetString(), out double grossPL)
-                    ? grossPL
-                    : (double?)null
-            };
-            transactions.Add(transaction);
-        }
-
-        return transactions;
-    }
-
 
     public async Task PerformeAnalyze(string csvFile)
     {
-        await transactionContext.Database.EnsureCreatedAsync();
+        
 
         var config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
@@ -190,10 +102,7 @@ public class Analyze
             Console.WriteLine(e);
             throw;
         }
-
-        // Přesunuto do XtbParser
-        var xtbParser = new XtbParser(transactionContext);
-        await xtbParser.ParseXtb(csvFile);
+        
     }
 
 

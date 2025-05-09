@@ -20,15 +20,17 @@ public partial class MainModel : ObservableObject
     private INavigator _navigator;
     private Analyze analyze;
     private AnyCoinTransactionLoader anyCoinTransactionLoader;
+    private XtbParser xtbParser;
     
     public MainModel(
         IStringLocalizer localizer,
         IOptions<AppConfig> appInfo,
-        INavigator navigator, Analyze analyze, AnyCoinTransactionLoader anyCoinTransactionLoader)
+        INavigator navigator, Analyze analyze, AnyCoinTransactionLoader anyCoinTransactionLoader, XtbParser xtbParser)
     {
         _navigator = navigator;
         this.analyze = analyze;
         this.anyCoinTransactionLoader = anyCoinTransactionLoader;
+        this.xtbParser = xtbParser;
         Title = "Main";
         Title += $" - {localizer["ApplicationName"]}";
         Title += $" - {appInfo?.Value?.Environment}";
@@ -48,9 +50,11 @@ public partial class MainModel : ObservableObject
         Xtb,
         Degiro
     }
+
     
-    public Provider? SelectedProvider { get; set; }
-    public ObservableCollection<Provider> Providers { get; } = new() { Provider.AynCoint, Provider.Xtb, Provider.Degiro };
+    public IState< Provider?> SelectedProvider => State<Provider?>.Value(this, () => null);
+
+    public ObservableCollection<Provider?> Providers { get; } = new() { null, Provider.AynCoint, Provider.Xtb, Provider.Degiro };
 
     public async Task GoToSecond()
     {
@@ -86,20 +90,23 @@ public partial class MainModel : ObservableObject
         Uno.Foundation.WebAssemblyRuntime.InvokeJS("Uno.UI.WindowManager.current.setPickerTitle('Select a file');");
 #endif
 
+        var ff = await SelectedProvider.Value();
+        
         picker.FileTypeFilter.Add("*");
         var file = await picker.PickSingleFileAsync();
-        if (file != null && SelectedProvider != Provider.AynCoint)
+        if (file != null && ff == Provider.Degiro)
         {
             SelectedFileName = file.Name;
            await analyze.PerformeAnalyze(file.Path);
         }
 
-        switch ( SelectedProvider)
+        switch ( ff)
         {
             case Provider.AynCoint:
               await  anyCoinTransactionLoader.ImportFromCsv(file.Path);
                 break;
             case Provider.Xtb:
+                await xtbParser.ParseXtb(file.Path);
                 break;
             case Provider.Degiro:
                 break;

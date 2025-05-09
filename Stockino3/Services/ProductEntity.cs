@@ -17,7 +17,8 @@ public class ProductEntity
     public string Name { get; set; }
     public string? ISIN { get; set; }
     public string? Ticker { get; set; }
-    public string Currency { get; set; }
+    public string Currency { get; set; } 
+    public string ProviderIdentificator { get; set; }
     public ProductType Type { get; set; }
     public ICollection<TransactionEntity> Transactions { get; set; } = new List<TransactionEntity>();
 }

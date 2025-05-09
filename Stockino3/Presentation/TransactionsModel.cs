@@ -65,9 +65,19 @@ public class TransactionsModel
 
     public async Task<List<TransactionViewModel>> LoadTransactionsAsync()
     {
-        var transactions = await _transactionContext.Transactions
-                                                    .Include(t => t.Product)
-                                                    .ToListAsync();
+        List<TransactionEntity> transactions = new List<TransactionEntity>();
+        
+        try
+        {
+             transactions = await _transactionContext.Transactions
+                                                        .Include(t => t.Product)
+                                                        .ToListAsync();
+        }
+        catch (Exception e)
+        {
+            
+            
+        }
 
         // Calculate portfolio state
         var portfolio =
@@ -238,16 +248,16 @@ public class TransactionsModel
         */
 
         // Get the currency from the product and convert if not in EUR
-        var product = await _transactionContext.Products
-                                               .FirstOrDefaultAsync(p => p.Ticker == ticker || p.ISIN == isin);
-
-        if (product != null && !string.IsNullOrEmpty(product.Currency) && product.Currency != "EUR")
-        {
-            var exchangeRate = await GetExchangeRateAsync(product.Currency, "EUR");
-
-            // Convert to EUR
-            price *= exchangeRate;
-        }
+        // var product = await _transactionContext.Products
+        //                                        .FirstOrDefaultAsync(p => p.Ticker == ticker || p.ISIN == isin);
+        //
+        // if (product != null && !string.IsNullOrEmpty(product.Currency) && product.Currency != "EUR")
+        // {
+        //     var exchangeRate = await GetExchangeRateAsync(product.Currency, "EUR");
+        //
+        //     // Convert to EUR
+        //     price *= exchangeRate;
+        // }
 
         return price;
     }
@@ -296,4 +306,6 @@ public class TransactionsModel
             return 1; // Default to 1:1 exchange rate on error
         }
     }
+    
+    
 }
