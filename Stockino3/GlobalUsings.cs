@@ -11,5 +11,6 @@ global using Stockino3.DataContracts.Serialization;
 global using Stockino3.Services.Caching;
 global using Stockino3.Services.Endpoints;
 global using ApplicationExecutionState = Windows.ApplicationModel.Activation.ApplicationExecutionState;
+using Uno.Extensions.Reactive.Config;
 
-[assembly: Uno.Extensions.Reactive.Config.BindableGenerationTool(3)]
+[assembly: BindableGenerationTool(3)]

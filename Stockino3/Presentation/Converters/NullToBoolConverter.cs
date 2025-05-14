@@ -1,4 +1,4 @@
-using System;
+using System.Diagnostics;
 using Microsoft.UI.Xaml.Data;
 
 namespace Stockino3.Presentation.Converters
@@ -7,7 +7,8 @@ namespace Stockino3.Presentation.Converters
     {
         public object Convert(object value, Type targetType, object parameter, string language)
         {
-            System.Diagnostics.Debug.WriteLine($"NullToBoolConverter: value={value}");
+            Debug.WriteLine($"NullToBoolConverter: value={value}");
+
             return value != null;
         }
 
@@ -17,4 +18,3 @@ namespace Stockino3.Presentation.Converters
         }
     }
 }
-

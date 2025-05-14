@@ -11,5 +11,5 @@ public record WeatherForecast(DateOnly Date, double TemperatureC, string? Summar
     /// <summary>
     /// Gets the Forecast Temperature in Fahrenheit
     /// </summary>
-    public double TemperatureF => 32 + (TemperatureC * 9 / 5);
+    public double TemperatureF => 32 + TemperatureC * 9 / 5;
 }

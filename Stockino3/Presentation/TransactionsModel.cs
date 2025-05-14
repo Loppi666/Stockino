@@ -1,25 +1,29 @@
-using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Text.Json;
 using AlphaVantage.Net.Core.Client;
 using AlphaVantage.Net.Stocks.Client;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.UI;
 using Stockino3.Services;
-using Uno.Extensions.Reactive;
 
 namespace Stockino3.Presentation;
 
-public class TransactionsModel
+// DTO pro předávání součtů portfolia
+public record PortfolioSumsDto(ProductEntity Product, string Currency, decimal TotalPrice, decimal TotalVolume, decimal TaxFreeVolume);
+
+public class TransactionsModel : IService
 {
     // Vlastnosti pro indikátor trendu
     public string TrendSymbol { get; private set; }
     public SolidColorBrush TrendColor { get; private set; }
     public string TrendDirection { get; private set; }
     private readonly TransactionContext _transactionContext;
+    private readonly IAlphaVantageApi _alphaVantageApi;
 
-    public TransactionsModel(TransactionContext transactionContext)
+    public TransactionsModel(TransactionContext transactionContext, IAlphaVantageApi alphaVantageApi)
     {
         _transactionContext = transactionContext;
+        _alphaVantageApi = alphaVantageApi;
 
         // Nastavení výchozího trendu
         UpdateTrendIndicator();
@@ -29,7 +33,7 @@ public class TransactionsModel
     {
         // Zde můžete implementovat logiku pro určení trendu na základě dat
         // Momentálně používám zjednodušený přístup s pevně daným trendem
-        var trend = "up"; // Toto by mělo být nahrazeno skutečným zdrojem dat nebo výpočtem
+        string trend = "up"; // Toto by mělo být nahrazeno skutečným zdrojem dat nebo výpočtem
 
         if (trend.ToLower() == "up")
         {
@@ -54,134 +58,65 @@ public class TransactionsModel
         }
     }
 
-    public IFeed<List<TransactionViewModel>> Transactions => Feed.Async(async ct => await this.LoadTransactionsAsync());
+    public IFeed<List<TransactionViewModel>> Transactions => Feed.Async(async ct => await LoadTransactionsAsync());
 
     public async ValueTask DoWork()
     {
         await ValueTask.CompletedTask;
     }
 
-    // In your data loading method:
-
     public async Task<List<TransactionViewModel>> LoadTransactionsAsync()
     {
-        List<TransactionEntity> transactions = new List<TransactionEntity>();
-        
-        try
-        {
-             transactions = await _transactionContext.Transactions
-                                                        .Include(t => t.Product)
-                                                        .ToListAsync();
-        }
-        catch (Exception e)
-        {
-            
-            
-        }
-
-        // Calculate portfolio state
-        var portfolio =
-            new Dictionary<ProductEntity, (decimal Shares, decimal TaxFreeShares, decimal AvgPrice
-                )>();
-
-        var today = DateTime.Now;
-        var threeYearsAgo = today.AddYears(-3);
-
-        foreach (var transaction in transactions.OrderBy(t => t.ExecutionTime))
-        {
-            string symbol = transaction.Product.Symbol;
-            string ticker = transaction.Product.Ticker;
-
-            if (!portfolio.ContainsKey((transaction.Product)))
-                portfolio[(transaction.Product)] = (0, 0, 0);
-
-            var (currentShares, currentTaxFreeShares, currentAvgPrice) = portfolio[(transaction.Product)];
-
-            if (transaction.OperationType == OperationType.OPEN)
-            {
-                // Buy operation
-                decimal newShares = currentShares + (decimal)transaction.Volume;
-                decimal newTaxFreeShares = currentTaxFreeShares;
-
-                // For buys older than 3 years, add to tax-free shares
-                if (transaction.ExecutionTime <= threeYearsAgo)
-                {
-                    newTaxFreeShares += (decimal)transaction.Volume;
-                }
-
-                // Správný výpočet váženého průměru
-                decimal totalValueBefore = currentShares * currentAvgPrice;
-
-                // Cena za kus = absolutní hodnota celkové ceny dělená objemem (Volume)
-                decimal pricePerUnit = Math.Abs((decimal)transaction.Price) / (decimal)transaction.Volume;
-                decimal newPurchaseValue = (decimal)transaction.Volume * pricePerUnit;
-
-                decimal totalValueAfter = totalValueBefore + newPurchaseValue;
-
-                decimal newAvgPrice = newShares > 0
-                    ? totalValueAfter / newShares
-                    : 0;
-
-                portfolio[(transaction.Product)] = (newShares, newTaxFreeShares, newAvgPrice);
-            }
-            else
-            {
-                // Sell operation
-                decimal newShares = currentShares - (decimal)transaction.Volume;
-
-                // Reduce tax-free shares proportionally (FIFO principle)
-                decimal taxFreeRatio = currentShares > 0
-                    ? currentTaxFreeShares / currentShares
-                    : 0;
-
-                decimal newTaxFreeShares =
-                    Math.Max(0, currentTaxFreeShares - ((decimal)transaction.Volume * taxFreeRatio));
-
-                // Průměrná cena zůstává stejná při prodeji
-                portfolio[(transaction.Product)] = (newShares, newTaxFreeShares, currentAvgPrice);
-            }
-        }
-
+        var data = await GetPortfolioSumsAsync();
         var viewModels = new List<TransactionViewModel>();
 
-        // Create portfolio summary items
-        foreach (var (symbol, (shares, taxFreeShares, avgPrice)) in portfolio)
+        foreach (var portfolioSum in data)
         {
-            if (shares > 0)
+            if (portfolioSum.TotalVolume > 0)
             {
-                // Find the product for this symbol to get more details
-                var product = transactions.FirstOrDefault(t => t.Product.Symbol == symbol.Symbol)?.Product;
-                string description = product?.Name ?? symbol.Symbol;
-                var price = await GetStockPrices(symbol.Ticker, symbol.ISIN);
-                var totalAmount = shares * price;
+                var product = portfolioSum.Product;
+                string description = product?.Name ?? product?.Symbol ?? "Neznámý produkt";
+                decimal shares = portfolioSum.TotalVolume;
+                decimal avgPrice = shares != 0 ? portfolioSum.TotalPrice / shares : 0;
+                decimal taxFreeShares = portfolioSum.TaxFreeVolume;
 
-                decimal absoluteProfit = (price - avgPrice) * shares;
+                decimal price = await GetStockPrices(product.Ticker, product.ISIN);
 
-                decimal profitPercentage = avgPrice > 0
-                    ? ((price - avgPrice) / avgPrice) * 100
-                    : 0;
+                // Přepočet na měnu nákupu, pokud se liší měny
+                decimal convertedPrice = price;
+                decimal exchangeRate = 1;
+                string displayCurrency = portfolioSum.Currency;
 
-                decimal taxFreeAmount = taxFreeShares * price;
+                if (!string.IsNullOrEmpty(product.Currency) && !string.IsNullOrEmpty(portfolioSum.Currency) &&
+                    !string.Equals(product.Currency, portfolioSum.Currency, StringComparison.OrdinalIgnoreCase))
+                {
+                    exchangeRate = await GetExchangeRateAsync(product.Currency, portfolioSum.Currency);
+                    convertedPrice = price * exchangeRate;
+                    displayCurrency = portfolioSum.Currency;
+                }
+
+                decimal totalAmount = shares * convertedPrice;
+                decimal absoluteProfit = (convertedPrice - avgPrice) * shares;
+                decimal profitPercentage = avgPrice > 0 ? (convertedPrice - avgPrice) / avgPrice * 100 : 0;
+                decimal taxFreeAmount = taxFreeShares * convertedPrice;
 
                 viewModels.Add(new TransactionViewModel
                 {
                     Description = description,
                     Reference = $"Shares: {shares}",
-                    Amount = $"Avg: {avgPrice:F2} {product.Currency}",
+                    Amount = $"Avg: {avgPrice:F2} {displayCurrency}",
                     Volume = $"Množství: {shares}, po časovém testu {taxFreeShares}",
                     TaxFreeVolume = taxFreeShares,
                     TaxFreeAmount = taxFreeAmount,
-                    TotalAmount = $"{totalAmount:F2} {product.Currency}, (za jednotku: {price:F2})",
+                    TotalAmount = $"{totalAmount:F2} {displayCurrency}, (za jednotku: {convertedPrice:F2}), průměrná cena: {avgPrice:F2}",
                     TotalAmountDecimal = totalAmount,
                     Ticker = product.Ticker,
                     AvgPrice = avgPrice,
-                    CurrentPrice = price
+                    CurrentPrice = convertedPrice
                 });
             }
         }
 
-        
-        // Load your transactions asynchronously
         return viewModels.OrderBy(x => x.Description).ToList();
     }
 
@@ -190,7 +125,9 @@ public class TransactionsModel
     private async Task<decimal> GetStockPrices(string ticker, string isin)
     {
         if (string.IsNullOrEmpty(ticker))
+        {
             return decimal.Zero;
+        }
 
         decimal price = 0;
 
@@ -201,7 +138,7 @@ public class TransactionsModel
             var stocksClient = alphavantageClient.Stocks();
 
             var quote = await stocksClient.GetGlobalQuoteAsync(ticker);
-            price = (decimal)quote.Price;
+            price = quote.Price;
         }
         catch (Exception ex)
         {
@@ -210,7 +147,7 @@ public class TransactionsModel
                 using var httpClient = new HttpClient();
                 string url = $"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}";
 
-                var response = await httpClient.GetStringAsync(url);
+                string response = await httpClient.GetStringAsync(url);
                 var jsonDocument = JsonDocument.Parse(response);
 
                 price = decimal.Zero;
@@ -263,7 +200,7 @@ public class TransactionsModel
     }
 
     // Static dictionary to cache exchange rates (fromCurrency_toCurrency -> (rate, timestamp))
-    private static Dictionary<string, (decimal Rate, DateTime Timestamp)> _exchangeRateCache = new();
+    private static readonly Dictionary<string, (decimal Rate, DateTime Timestamp)> _exchangeRateCache = new();
     private static readonly TimeSpan _cacheDuration = TimeSpan.FromHours(24); // Cache for 24 hours
 
     private async Task<decimal> GetExchangeRateAsync(string fromCurrency, string toCurrency)
@@ -274,27 +211,21 @@ public class TransactionsModel
 
             // Check if we have a valid cached rate
             if (_exchangeRateCache.TryGetValue(cacheKey, out var cachedRate) &&
-                (DateTime.Now - cachedRate.Timestamp) < _cacheDuration)
+                ((DateTime.Now - cachedRate.Timestamp) < _cacheDuration))
             {
                 return cachedRate.Rate;
             }
 
-            // Not in cache or expired, fetch from API
-            var url =
-                $"https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency={fromCurrency}&to_currency={toCurrency}&apikey={AlphaApiKey}";
+            // Získání kurzu přes refit klienta bez zadávání apiKey
+            var response = await _alphaVantageApi.GetExchangeRateAsync(fromCurrency, toCurrency);
 
-            using var httpClient = new HttpClient();
-            var response = await httpClient.GetStringAsync(url);
-            var exchangeRateData = System.Text.Json.JsonDocument.Parse(response);
+            decimal rate = 1;
 
-            var exchangeRateValue = exchangeRateData.RootElement
-                                                    .GetProperty("Realtime Currency Exchange Rate")
-                                                    .GetProperty("5. Exchange Rate")
-                                                    .GetString();
+            if (response?.RealtimeCurrencyExchangeRate?.ExchangeRate != null)
+            {
+                rate = decimal.Parse(response.RealtimeCurrencyExchangeRate.ExchangeRate, CultureInfo.InvariantCulture);
+            }
 
-            decimal rate = decimal.Parse(exchangeRateValue, System.Globalization.CultureInfo.InvariantCulture);
-
-            // Store in cache
             _exchangeRateCache[cacheKey] = (rate, DateTime.Now);
 
             return rate;
@@ -306,6 +237,36 @@ public class TransactionsModel
             return 1; // Default to 1:1 exchange rate on error
         }
     }
-    
-    
+
+    // Vrací seznam souhrnů podle produktu, mapovaných rovnou do DTO
+    public async Task<List<PortfolioSumsDto>> GetPortfolioSumsAsync()
+    {
+        var threeYearsAgo = DateTime.Now.AddYears(-3);
+
+            var sums = await _transactionContext.Transactions
+                                                .Include(t => t.Product)
+                                                .GroupBy(t => new
+                                                 {
+                                                     t.ProductId,
+                                                     t.BuyInCurrency
+                                                 })
+                                                .Select(g => new PortfolioSumsDto(  g.First().Product,
+                                                                                  g.Key.BuyInCurrency,
+                                                                                
+                                                                                  g.Sum(t => t.OperationType == OperationType.OPEN
+                                                                                            ? t.TotalCost
+                                                                                            : -t.TotalCost),
+                                                                                  g.Sum(t => t.OperationType == OperationType.OPEN
+                                                                                            ? t.Volume
+                                                                                            : -t.Volume),
+                                                                                  g.Sum(t => (t.OperationType == OperationType.OPEN) && (t.ExecutionTime <= threeYearsAgo)
+                                                                                            ? t.Volume
+                                                                                            : 0)))
+                                                .AsSplitQuery()
+                                                .ToListAsync();
+            
+            return sums;
+
+        
+    }
 }

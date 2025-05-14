@@ -1,6 +1,4 @@
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
-using System;
 
 namespace Stockino3.Presentation.Converters
 {
@@ -11,9 +9,11 @@ namespace Stockino3.Presentation.Converters
             if (value is decimal profit)
             {
                 // Zobrazit pouze pokud existuje zisk nebo ztráta (ne nula)
-                return profit != 0 ? Visibility.Visible : Visibility.Collapsed;
+                return profit != 0
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
             }
-            
+
             // Výchozí stav - skrýt
             return Visibility.Collapsed;
         }

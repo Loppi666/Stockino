@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using Microsoft.UI.Xaml.Data;
 
@@ -12,11 +11,13 @@ namespace Stockino3.Presentation.Converters
             {
                 return EvaluatePERatio(pe);
             }
-            else if (value is decimal decimalPe)
+
+            if (value is decimal decimalPe)
             {
                 return EvaluatePERatio(decimalPe.ToString(CultureInfo.InvariantCulture));
             }
-            else if (value is double doublePe)
+
+            if (value is double doublePe)
             {
                 return EvaluatePERatio(doublePe.ToString(CultureInfo.InvariantCulture));
             }
@@ -32,16 +33,22 @@ namespace Stockino3.Presentation.Converters
 
         private string EvaluatePERatio(string pe)
         {
-            if (decimal.TryParse(pe, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+            if (decimal.TryParse(pe, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal value))
             {
                 if (value < 10)
+                {
                     return "Velmi nízké (akcie může být podhodnocená)";
+                }
 
                 if (value < 20)
+                {
                     return "Přiměřené (rozumné ocenění)";
+                }
 
                 if (value < 30)
+                {
                     return "Mírně vysoké (růstové očekávání)";
+                }
 
                 return "Vysoké (pozor na přecenění)";
             }

@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using Microsoft.UI.Xaml.Data;
 
@@ -12,11 +11,13 @@ namespace Stockino3.Presentation.Converters
             {
                 return EvaluateEPS(eps);
             }
-            else if (value is decimal decimalEps)
+
+            if (value is decimal decimalEps)
             {
                 return EvaluateEPS(decimalEps.ToString(CultureInfo.InvariantCulture));
             }
-            else if (value is double doubleEps)
+
+            if (value is double doubleEps)
             {
                 return EvaluateEPS(doubleEps.ToString(CultureInfo.InvariantCulture));
             }
@@ -32,16 +33,22 @@ namespace Stockino3.Presentation.Converters
 
         private string EvaluateEPS(string eps)
         {
-            if (decimal.TryParse(eps, NumberStyles.Any, CultureInfo.InvariantCulture, out var value))
+            if (decimal.TryParse(eps, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal value))
             {
                 if (value > 5)
+                {
                     return "Velmi dobrý zisk na akcii";
+                }
 
                 if (value > 2)
+                {
                     return "Solidní ziskovost";
+                }
 
                 if (value > 0)
+                {
                     return "Nízká ziskovost";
+                }
 
                 return "Ztrátová firma";
             }

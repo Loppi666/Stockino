@@ -63,6 +63,7 @@
         <PackageReference Include="Skender.Stock.Indicators" />
         <PackageReference Include="Uno.Extensions.Navigation" />
         <PackageReference Include="Uno.Extensions.Reactive" />
+        <PackageReference Include="Scrutor" />
         <PackageReference Include="Uno.Microsoft.Xaml.Behaviors.WinUI.Managed" />
     </ItemGroup>
     <ItemGroup>

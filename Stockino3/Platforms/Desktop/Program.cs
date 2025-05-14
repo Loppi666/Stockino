@@ -8,12 +8,12 @@ public class Program
     public static void Main(string[] args)
     {
         var host = SkiaHostBuilder.Create()
-            .App(() => new App())
-            .UseX11()
-            .UseLinuxFrameBuffer()
-            .UseMacOS()
-            .UseWindows()
-            .Build();
+                                  .App(() => new App())
+                                  .UseX11()
+                                  .UseLinuxFrameBuffer()
+                                  .UseMacOS()
+                                  .UseWindows()
+                                  .Build();
 
         host.Run();
     }

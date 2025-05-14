@@ -10,7 +10,7 @@ internal class DebugHttpHandler : DelegatingHandler
         _logger = logger;
     }
 
-    protected async override Task<HttpResponseMessage> SendAsync(
+    protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
@@ -19,17 +19,21 @@ internal class DebugHttpHandler : DelegatingHandler
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogDebugMessage("Unsuccessful API Call");
+
             if (request.RequestUri is not null)
             {
                 _logger.LogDebugMessage($"{request.RequestUri} ({request.Method})");
             }
 
-            foreach ((var key, var values) in request.Headers.ToDictionary(x => x.Key, x => string.Join(", ", x.Value)))
+            foreach (var (key, values) in request.Headers.ToDictionary(x => x.Key, x => string.Join(", ", x.Value)))
             {
                 _logger.LogDebugMessage($"{key}: {values}");
             }
 
-            var content = request.Content is not null ? await request.Content.ReadAsStringAsync() : null;
+            string? content = request.Content is not null
+                ? await request.Content.ReadAsStringAsync()
+                : null;
+
             if (!string.IsNullOrEmpty(content))
             {
                 _logger.LogDebugMessage(content);

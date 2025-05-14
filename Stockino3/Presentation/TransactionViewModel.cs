@@ -45,10 +45,10 @@ public class TransactionViewModel
     }
 
     public decimal Profit { get; private set; }
-    
+
     // Absolutní zisk/ztráta v peněžní hodnotě
     public decimal AbsoluteProfit { get; private set; }
-    
+
     // Formátovaný absolutní zisk/ztráta
     public string AbsoluteProfitFormatted => AbsoluteProfit != 0
         ? $"{AbsoluteProfit:F2} Kč"
@@ -56,7 +56,7 @@ public class TransactionViewModel
 
     private void CalculateProfit()
     {
-        if (_avgPrice > 0 && _currentPrice > 0)
+        if ((_avgPrice > 0) && (_currentPrice > 0))
         {
             // Výpočet absolutního zisku/ztráty v penězích 
             AbsoluteProfit = (_currentPrice - _avgPrice) * TaxFreeVolume;

@@ -1,31 +1,22 @@
-using System.Collections.ObjectModel;
 using System.Globalization;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
-using Newtonsoft.Json;
-using SkiaSharp;
-using LiveChartsCore;
 using LiveChartsCore.Defaults;
-using LiveChartsCore.Drawing;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Extensions;
 using LiveChartsCore.SkiaSharpView.Painting;
 using LiveChartsCore.SkiaSharpView.VisualElements;
 using LiveChartsCore.VisualElements;
+using Newtonsoft.Json;
 using Skender.Stock.Indicators;
 using SkiaSharp;
-using ISeries = LiveChartsCore.ISeries;
 using Stockino3.Presentation.Services;
+using ISeries = LiveChartsCore.ISeries;
 
 namespace Stockino3.Presentation;
 
-using Uno.Extensions.Navigation;
-
-public partial record TransactionDetailModel(TransactionViewModel Transaction)
+public partial record TransactionDetailModel(TransactionViewModel Transaction) 
 {
-    
-    const string ApiKey = "9E71JJDSQDAD5CZR";
-    const string Interval = "daily"; // lze upravit
+    private const string ApiKey = "9E71JJDSQDAD5CZR";
+    private const string Interval = "daily"; // lze upravit
 
     // ChartData je Feed (MVUX property)
     public IFeed<ChartDataModel> ChartData => Feed.Async(async ct => await LoadChartData(ct));
@@ -52,74 +43,120 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
         bool Parse(string? input, out decimal val) =>
             decimal.TryParse(input, NumberStyles.Float, CultureInfo.InvariantCulture, out val);
 
-        if (Parse(data.PERatio, out var pe))
+        if (Parse(data.PERatio, out decimal pe))
+        {
             EvaluatePERatio(pe, result);
+        }
 
-        if (Parse(data.PEGRatio, out var peg))
+        if (Parse(data.PEGRatio, out decimal peg))
+        {
             EvaluatePEGRatio(peg, result);
+        }
 
-        if (Parse(data.ReturnOnEquityTTM, out var roe))
+        if (Parse(data.ReturnOnEquityTTM, out decimal roe))
+        {
             EvaluateROE(roe, result);
+        }
 
-        if (Parse(data.ProfitMargin, out var pm))
+        if (Parse(data.ProfitMargin, out decimal pm))
+        {
             EvaluateProfitMargin(pm, result);
+        }
 
-        if (Parse(data.DividendYield, out var dy))
+        if (Parse(data.DividendYield, out decimal dy))
+        {
             EvaluateDividendYield(dy, result);
+        }
 
-        if (Parse(data.PriceToSalesRatioTTM, out var ps))
+        if (Parse(data.PriceToSalesRatioTTM, out decimal ps))
+        {
             EvaluatePriceToSales(ps, result);
+        }
 
-        if (Parse(data.EVToEBITDA, out var evEbitda))
+        if (Parse(data.EVToEBITDA, out decimal evEbitda))
+        {
             EvaluateEVToEBITDA(evEbitda, result);
+        }
 
-        if (Parse(data.Beta, out var beta))
+        if (Parse(data.Beta, out decimal beta))
+        {
             EvaluateBeta(beta, result);
+        }
 
         // 🆕 Nové metody
-        if (Parse(data.ReturnOnAssetsTTM, out var roa))
+        if (Parse(data.ReturnOnAssetsTTM, out decimal roa))
+        {
             EvaluateROA(roa, result);
+        }
 
-        if (Parse(data.OperatingMarginTTM, out var om))
+        if (Parse(data.OperatingMarginTTM, out decimal om))
+        {
             EvaluateOperatingMargin(om, result);
-        
-        if (Parse(data.MovingAverage50Day, out var ma50) && Parse(data.MovingAverage200Day, out var ma200))
+        }
+
+        if (Parse(data.MovingAverage50Day, out decimal ma50) && Parse(data.MovingAverage200Day, out decimal ma200))
+        {
             EvaluateMovingAverageCross(ma50, ma200, result);
-        
-        if (Parse(data.ForwardPE, out var fpe)) EvaluateForwardPE(fpe, result);
-        if (Parse(data.PriceToBookRatio, out var pb)) EvaluatePriceToBook(pb, result);
-        if (Parse(data.QuarterlyRevenueGrowthYOY, out var revGrowth)) EvaluateRevenueGrowth(revGrowth, result);
-        if (Parse(data.QuarterlyEarningsGrowthYOY, out var earnGrowth)) EvaluateEarningsGrowth(earnGrowth, result);
-        if (Parse(data.DividendPerShare, out var dps) && Parse(data.EPS, out var eps)) 
+        }
+
+        if (Parse(data.ForwardPE, out decimal fpe))
+        {
+            EvaluateForwardPE(fpe, result);
+        }
+
+        if (Parse(data.PriceToBookRatio, out decimal pb))
+        {
+            EvaluatePriceToBook(pb, result);
+        }
+
+        if (Parse(data.QuarterlyRevenueGrowthYOY, out decimal revGrowth))
+        {
+            EvaluateRevenueGrowth(revGrowth, result);
+        }
+
+        if (Parse(data.QuarterlyEarningsGrowthYOY, out decimal earnGrowth))
+        {
+            EvaluateEarningsGrowth(earnGrowth, result);
+        }
+
+        if (Parse(data.DividendPerShare, out decimal dps) && Parse(data.EPS, out decimal eps))
+        {
             EvaluatePayoutRatio(dps, eps, result);
-        if (Parse(data.AnalystTargetPrice, out var target) && Parse(data.MovingAverage50Day, out var current)) 
+        }
+
+        if (Parse(data.AnalystTargetPrice, out decimal target) && Parse(data.MovingAverage50Day, out decimal current))
+        {
             EvaluateTargetPriceVsCurrent(target, current, result);
+        }
 
         // Výpis výsledků
         Console.WriteLine($"\n📊 Výsledky analýzy pro {data.Symbol}:\n");
 
         Console.WriteLine("✅ Silné stránky:");
 
-        foreach (var p in result.Positives)
+        foreach (string p in result.Positives)
+        {
             Console.WriteLine("• " + p);
+        }
 
         Console.WriteLine("\n⚠️ Rizika:");
 
-        foreach (var i in result.Issues)
+        foreach (string i in result.Issues)
+        {
             Console.WriteLine("• " + i);
+        }
 
         Console.WriteLine("\n📘 Vysvětlení:");
 
-        foreach (var e in result.Explanations)
+        foreach (string e in result.Explanations)
+        {
             Console.WriteLine("• " + e);
-
-  
+        }
 
         return new GaugesData(peGauge, epsGague, pegGauge, roeGauge, profitMarginGauge, roaGauge, operatingMarginGauge, dividendYieldGauge,
-                              priceToSalesGauge, evToEbitdaGauge, betaGauge, result.Score, result.GetSummary() );
+                              priceToSalesGauge, evToEbitdaGauge, betaGauge, result.Score, result.GetSummary());
     }
-    
-   
+
     private async Task<ChartDataModel> LoadChartData(CancellationToken ct)
     {
         // Načti historii a uprav na max 400 dní
@@ -136,9 +173,9 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
         double[] PadLeftWithNaN(int padCount, IEnumerable<double?> values)
             => Enumerable.Repeat(double.NaN, padCount).Concat(values.Select(v => v ?? 0)).ToArray();
 
-        var priceSeries = history.Select(x => (double)x.Close).ToArray();
-        var sma50Series = PadLeftWithNaN(history.Count - sma50Arr.Count, sma50Arr.Select(x => x.Sma));
-        var sma200Series = PadLeftWithNaN(history.Count - sma200Arr.Count, sma200Arr.Select(x => x.Sma));
+        double[] priceSeries = history.Select(x => (double)x.Close).ToArray();
+        double[] sma50Series = PadLeftWithNaN(history.Count - sma50Arr.Count, sma50Arr.Select(x => x.Sma));
+        double[] sma200Series = PadLeftWithNaN(history.Count - sma200Arr.Count, sma200Arr.Select(x => x.Sma));
 
         // Najdi Golden/Death Cross body pouze tam, kde jsou hodnoty vypočtené (HasValue)
         var goldenPoints = new List<ObservablePoint>();
@@ -147,15 +184,19 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
         for (int i = 1; i < history.Count; i++)
         {
             // Musí být platné SMA hodnoty pro oba body
-            if (i < sma50Series.Length && i < sma200Series.Length &&
+            if ((i < sma50Series.Length) && (i < sma200Series.Length) &&
                 !double.IsNaN(sma50Series[i - 1]) && !double.IsNaN(sma200Series[i - 1]) &&
                 !double.IsNaN(sma50Series[i]) && !double.IsNaN(sma200Series[i]))
             {
-                if (sma50Series[i - 1] < sma200Series[i - 1] && sma50Series[i] > sma200Series[i])
+                if ((sma50Series[i - 1] < sma200Series[i - 1]) && (sma50Series[i] > sma200Series[i]))
+                {
                     goldenPoints.Add(new ObservablePoint(dates[i].Ticks, sma50Series[i]));
+                }
 
-                if (sma50Series[i - 1] > sma200Series[i - 1] && sma50Series[i] < sma200Series[i])
+                if ((sma50Series[i - 1] > sma200Series[i - 1]) && (sma50Series[i] < sma200Series[i]))
+                {
                     deathPoints.Add(new ObservablePoint(dates[i].Ticks, sma50Series[i]));
+                }
             }
         }
 
@@ -222,12 +263,12 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
                 }
             },
             LabelsRotation = 75,
-            TextSize = 12,
+            TextSize = 12
         };
 
-        var xAxes = new Axis[] { axis };
+        var xAxes = new[] { axis };
 
-        var yAxes = new Axis[]
+        var yAxes = new[]
         {
             new Axis
             {
@@ -252,34 +293,34 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             var today200 = sma200[i];
             var yesterday200 = sma200[i - 1];
 
-            if (yesterday50.Sma < yesterday200.Sma && today50.Sma > today200.Sma)
+            if ((yesterday50.Sma < yesterday200.Sma) && (today50.Sma > today200.Sma))
             {
                 Console.WriteLine($"Golden Cross: {today50.Date:yyyy-MM-dd}");
             }
 
-            if (yesterday50.Sma > yesterday200.Sma && today50.Sma < today200.Sma)
+            if ((yesterday50.Sma > yesterday200.Sma) && (today50.Sma < today200.Sma))
             {
                 Console.WriteLine($"Death Cross: {today50.Date:yyyy-MM-dd}");
             }
         }
     }
 
-    static async Task<List<Quote>> GetDailyPrices(string symbol)
+    private static async Task<List<Quote>> GetDailyPrices(string symbol)
     {
         using HttpClient client = new();
         string url = $"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY_ADJUSTED&symbol={symbol}&outputsize=full&apikey={ApiKey}";
 
         string jsonResponse = await client.GetStringAsync(url);
-        AlphaVantageResponse data = JsonConvert.DeserializeObject<AlphaVantageResponse>(jsonResponse);
+        var data = JsonConvert.DeserializeObject<AlphaVantageResponse>(jsonResponse);
 
-        List<Quote> quotes = data.TimeSeriesDaily
-                                 .Select(entry => new Quote
-                                  {
-                                      Date = DateTime.Parse(entry.Key),
-                                      Close = decimal.Parse(entry.Value.AdjustedClose, CultureInfo.InvariantCulture)
-                                  })
-                                 .OrderBy(q => q.Date)
-                                 .ToList();
+        var quotes = data.TimeSeriesDaily
+                         .Select(entry => new Quote
+                          {
+                              Date = DateTime.Parse(entry.Key),
+                              Close = decimal.Parse(entry.Value.AdjustedClose, CultureInfo.InvariantCulture)
+                          })
+                         .OrderBy(q => q.Date)
+                         .ToList();
 
         quotes.Sort((a, b) => a.Date.CompareTo(b.Date));
 
@@ -291,7 +332,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
         using var client = new HttpClient();
         string url = $"https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={ApiKey}";
 
-        var response = await client.GetStringAsync(url);
+        string response = await client.GetStringAsync(url);
 
         return JsonConvert.DeserializeObject<OverviewData>(response);
     }
@@ -321,7 +362,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreatePeGauge(string peRatio)
     {
-        double.TryParse(peRatio, NumberStyles.Any, CultureInfo.InvariantCulture, out var pe);
+        double.TryParse(peRatio, NumberStyles.Any, CultureInfo.InvariantCulture, out double pe);
 
         var Series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(10, s => SetStyle(s, SKColors.LimeGreen)),
                                                               new GaugeItem(10, s => SetStyle(s, SKColors.Goldenrod)),
@@ -332,7 +373,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = pe > 40
                 ? 40
                 : pe,
-            Fill = new SolidColorPaint(NeedleColorService.GetNeedleColor(pe), 3),
+            Fill = new SolidColorPaint(NeedleColorService.GetNeedleColor(pe), 3)
         };
 
         var VisualElements = new VisualElement[]
@@ -348,7 +389,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = Series,
             VisualElements = VisualElements,
@@ -369,7 +410,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreateEpsGauge(string eps)
     {
-        double.TryParse(eps, NumberStyles.Any, CultureInfo.InvariantCulture, out var epsDecimal);
+        double.TryParse(eps, NumberStyles.Any, CultureInfo.InvariantCulture, out double epsDecimal);
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(5, s => SetStyle(s, SKColors.Tomato)), // Ztrátové/nízké EPS
                                                               new GaugeItem(2, s => SetStyle(s, SKColors.Goldenrod)), // Solidní EPS
@@ -380,7 +421,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
         var needle = new NeedleVisual
         {
             Value = epsDecimal,
-            Fill = new SolidColorPaint(SKColors.Gold, 2),
+            Fill = new SolidColorPaint(SKColors.Gold, 2)
         };
 
         var VisualElements = new VisualElement[]
@@ -397,7 +438,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = VisualElements,
@@ -408,7 +449,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreatePegGauge(string pegRatio)
     {
-        double.TryParse(pegRatio, NumberStyles.Any, CultureInfo.InvariantCulture, out var peg);
+        double.TryParse(pegRatio, NumberStyles.Any, CultureInfo.InvariantCulture, out double peg);
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(0.8, s => SetStyle(s, SKColors.LimeGreen)), // Podhodnocená akcie
                                                               new GaugeItem(0.4, s => SetStyle(s, SKColors.Goldenrod)), // Férově oceněná
@@ -421,7 +462,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = peg > 4
                 ? 4
                 : peg,
-            Fill = new SolidColorPaint(NeedleColorService.GetPegNeedleColor(peg), 2),
+            Fill = new SolidColorPaint(NeedleColorService.GetPegNeedleColor(peg), 2)
         };
 
         var visualElements = new VisualElement[]
@@ -438,7 +479,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = visualElements,
@@ -451,7 +492,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreateRoeGauge(string roeValue)
     {
-        double.TryParse(roeValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var roe);
+        double.TryParse(roeValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double roe);
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(10, s => SetStyle(s, SKColors.Tomato)), // Slabá efektivita
                                                               new GaugeItem(5, s => SetStyle(s, SKColors.Orange)), // Přijatelná efektivita
@@ -464,7 +505,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = roe > 60
                 ? 60
                 : roe,
-            Fill = new SolidColorPaint(NeedleColorService.GetRoeNeedleColor(roe), 2),
+            Fill = new SolidColorPaint(NeedleColorService.GetRoeNeedleColor(roe), 2)
         };
 
         var visualElements = new VisualElement[]
@@ -481,7 +522,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = visualElements,
@@ -494,7 +535,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreateProfitMarginGauge(string marginValue)
     {
-        double.TryParse(marginValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var margin);
+        double.TryParse(marginValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double margin);
         margin *= 100; // Převedeme na procenta pro lepší vizualizaci
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(5, s => SetStyle(s, SKColors.Tomato)), // Slabá rentabilita
@@ -508,7 +549,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = margin > 50
                 ? 50
                 : margin,
-            Fill = new SolidColorPaint(NeedleColorService.GetMarginNeedleColor(margin), 2),
+            Fill = new SolidColorPaint(NeedleColorService.GetMarginNeedleColor(margin), 2)
         };
 
         var visualElements = new VisualElement[]
@@ -525,7 +566,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = visualElements,
@@ -542,7 +583,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreateDividendYieldGauge(string dyValue)
     {
-        double.TryParse(dyValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var dy);
+        double.TryParse(dyValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double dy);
         dy *= 100; // Převedeme na procenta pro lepší vizualizaci
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(1, s => SetStyle(s, SKColors.Tomato)), // Slabý výnos
@@ -556,7 +597,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = dy > 12
                 ? 12
                 : dy,
-            Fill = new SolidColorPaint(NeedleColorService.GetDividendNeedleColor(dy), 2),
+            Fill = new SolidColorPaint(NeedleColorService.GetDividendNeedleColor(dy), 2)
         };
 
         var visualElements = new VisualElement[]
@@ -573,7 +614,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = visualElements,
@@ -586,7 +627,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreateRoaGauge(string roaValue)
     {
-        double.TryParse(roaValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var roa);
+        double.TryParse(roaValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double roa);
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(5, s => SetStyle(s, SKColors.Tomato)), // Slabé využití aktiv
                                                               new GaugeItem(5, s => SetStyle(s, SKColors.Orange)), // Průměrná efektivita
@@ -599,7 +640,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = roa > 30
                 ? 30
                 : roa,
-            Fill = new SolidColorPaint(NeedleColorService.GetRoaNeedleColor(roa), 2),
+            Fill = new SolidColorPaint(NeedleColorService.GetRoaNeedleColor(roa), 2)
         };
 
         var visualElements = new VisualElement[]
@@ -616,7 +657,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = visualElements,
@@ -629,7 +670,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreateOperatingMarginGauge(string opMarginValue)
     {
-        double.TryParse(opMarginValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var opMargin);
+        double.TryParse(opMarginValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double opMargin);
         opMargin *= 100; // Převedeme na procenta pro lepší vizualizaci
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(10, s => SetStyle(s, SKColors.Tomato)), // Slabá provozní ziskovost
@@ -643,7 +684,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = opMargin > 50
                 ? 50
                 : opMargin,
-            Fill = new SolidColorPaint(NeedleColorService.GetOperatingMarginNeedleColor(opMargin), 2),
+            Fill = new SolidColorPaint(NeedleColorService.GetOperatingMarginNeedleColor(opMargin), 2)
         };
 
         var visualElements = new VisualElement[]
@@ -660,7 +701,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = visualElements,
@@ -673,7 +714,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreatePriceToSalesGauge(string psValue)
     {
-        double.TryParse(psValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var ps);
+        double.TryParse(psValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double ps);
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(2, s => SetStyle(s, SKColors.LimeGreen)), // Velmi atraktivní ocenění
                                                               new GaugeItem(2, s => SetStyle(s, SKColors.Goldenrod)), // Rozumná valuace
@@ -686,7 +727,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = ps > 16
                 ? 16
                 : ps,
-            Fill = new SolidColorPaint(NeedleColorService.GetPriceToSalesNeedleColor(ps), 2),
+            Fill = new SolidColorPaint(NeedleColorService.GetPriceToSalesNeedleColor(ps), 2)
         };
 
         var visualElements = new VisualElement[]
@@ -703,7 +744,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = visualElements,
@@ -716,7 +757,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreateEVToEBITDAGauge(string evEbitdaValue)
     {
-        double.TryParse(evEbitdaValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var evEbitda);
+        double.TryParse(evEbitdaValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double evEbitda);
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(8, s => SetStyle(s, SKColors.LimeGreen)), // Velmi dobré ocenění
                                                               new GaugeItem(4, s => SetStyle(s, SKColors.Goldenrod)), // Příznivé
@@ -729,7 +770,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = evEbitda > 26
                 ? 26
                 : evEbitda,
-            Fill = new SolidColorPaint(NeedleColorService.GetEVToEBITDANeedleColor(evEbitda), 2),
+            Fill = new SolidColorPaint(NeedleColorService.GetEVToEBITDANeedleColor(evEbitda), 2)
         };
 
         var visualElements = new VisualElement[]
@@ -746,7 +787,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = visualElements,
@@ -759,7 +800,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
 
     public GaugeData CreateBetaGauge(string betaValue)
     {
-        double.TryParse(betaValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var beta);
+        double.TryParse(betaValue, NumberStyles.Any, CultureInfo.InvariantCulture, out double beta);
 
         var series = GaugeGenerator.BuildAngularGaugeSections(new GaugeItem(0.8, s => SetStyle(s, SKColors.LimeGreen)), // Velmi stabilní akcie
                                                               new GaugeItem(0.2, s => SetStyle(s, SKColors.Goldenrod)), // Mírná volatilita
@@ -772,7 +813,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             Value = beta > 2.2
                 ? 2.2
                 : beta,
-            Fill = new SolidColorPaint(NeedleColorService.GetBetaNeedleColor(beta), 2),
+            Fill = new SolidColorPaint(NeedleColorService.GetBetaNeedleColor(beta), 2)
         };
 
         var visualElements = new VisualElement[]
@@ -789,7 +830,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             needle
         };
 
-        return new GaugeData()
+        return new GaugeData
         {
             Series = series,
             VisualElements = visualElements,
@@ -812,12 +853,13 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
         };
     }
 
-   public static int WeightedScore(int level, double weight = 1.0) => (int)(ScoreLevel(level) * weight);
+    public static int WeightedScore(int level, double weight = 1.0) => (int)(ScoreLevel(level) * weight);
 
     public static void EvaluatePERatio(decimal pe, EvaluationResult result)
     {
         result.Explanations.Add("➡ P/E ukazuje, kolik investor platí za 1 dolar zisku. Nižší = levnější akcie.");
         double weight = 1.2;
+
         if (pe < 10)
         {
             result.Positives.Add("P/E < 10 – velmi levná akcie.");
@@ -844,6 +886,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ PEG bere v úvahu růst zisků – PEG < 1 znamená podhodnocenou růstovou akcii.");
         double weight = 1.4;
+
         if (peg < 0.8m)
         {
             result.Positives.Add("PEG < 0.8 – podhodnocená růstová akcie.");
@@ -870,6 +913,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ ROE měří, jak efektivně firma zhodnocuje kapitál akcionářů.");
         double weight = 1.6;
+
         if (roe > 30)
         {
             result.Positives.Add("ROE > 30 % – výjimečně výkonná firma.");
@@ -896,6 +940,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ Marže ukazuje, kolik firma vydělá z tržeb – vyšší je lepší.");
         double weight = 1.0;
+
         if (margin > 0.25m)
         {
             result.Positives.Add("Marže > 25 % – vynikající ziskovost.");
@@ -922,6 +967,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ Výnos dividendy – pasivní příjem pro investory.");
         double weight = 0.8;
+
         if (dy > 0.06m)
         {
             result.Positives.Add("Dividenda > 6 % – velmi atraktivní.");
@@ -948,7 +994,8 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ Křížení klouzavých průměrů signalizuje změnu trendu (Golden/Death cross).");
         double weight = 1.0;
-        if (ma50 > ma200 * 1.02m)
+
+        if (ma50 > (ma200 * 1.02m))
         {
             result.Positives.Add("Golden Cross – 50 MA nad 200 MA, silný růstový signál.");
             result.Score += WeightedScore(4, weight);
@@ -958,7 +1005,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             result.Positives.Add("50 MA mírně nad 200 MA – pozitivní trend.");
             result.Score += WeightedScore(3, weight);
         }
-        else if (Math.Abs(ma50 - ma200) / ma200 < 0.02m)
+        else if ((Math.Abs(ma50 - ma200) / ma200) < 0.02m)
         {
             result.Explanations.Add("50 MA ≈ 200 MA – neutrální fáze.");
             result.Score += WeightedScore(2, weight);
@@ -969,12 +1016,12 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             result.Score += WeightedScore(1, weight);
         }
     }
-    
-    
+
     public static void EvaluatePriceToSales(decimal ps, EvaluationResult result)
     {
         result.Explanations.Add("➡ P/S (Price to Sales) poměr ukazuje, kolik investor platí za 1 dolar tržeb. Nižší = levnější.");
         double weight = 1.0;
+
         if (ps < 2)
         {
             result.Positives.Add("P/S < 2 – velmi atraktivní ocenění vůči tržbám.");
@@ -1001,6 +1048,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ EV/EBITDA ukazuje celkové ocenění firmy vůči provoznímu zisku. Nižší = levnější.");
         double weight = 1.2;
+
         if (evEbitda < 8)
         {
             result.Positives.Add("EV/EBITDA < 8 – velmi dobré ocenění.");
@@ -1027,6 +1075,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ Beta ukazuje volatilitu vůči trhu. <1 = stabilnější než trh, >1 = rizikovější.");
         double weight = 1.0;
+
         if (beta < 0.8m)
         {
             result.Positives.Add("Beta < 0.8 – velmi stabilní akcie.");
@@ -1053,6 +1102,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ ROA (Return on Assets) ukazuje, jak efektivně firma využívá svá aktiva ke generování zisku.");
         double weight = 1.3;
+
         if (roa > 15)
         {
             result.Positives.Add("ROA > 15 % – výborná efektivita aktiv.");
@@ -1079,6 +1129,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ Provozní marže ukazuje, kolik zůstane z tržeb po odečtení provozních nákladů. Vyšší = zdravější provoz.");
         double weight = 1.2;
+
         if (opMargin > 0.3m)
         {
             result.Positives.Add("Provozní marže > 30 % – výjimečně efektivní provoz.");
@@ -1105,6 +1156,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ Forward P/E ukazuje ocenění firmy vůči očekávanému zisku.");
         double weight = 1.1;
+
         if (fpe < 10)
         {
             result.Positives.Add("Forward P/E < 10 – velmi nízké budoucí ocenění.");
@@ -1131,6 +1183,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ P/B (Price to Book) ukazuje, kolik investor platí za účetní hodnotu firmy.");
         double weight = 1.1;
+
         if (pb < 1)
         {
             result.Positives.Add("P/B < 1 – firma je pod účetní hodnotou (možná podhodnocená).");
@@ -1152,13 +1205,12 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
             result.Score += WeightedScore(1, weight);
         }
     }
-    
-
 
     public static void EvaluateRevenueGrowth(decimal growth, EvaluationResult result)
     {
         result.Explanations.Add("➡ Růst tržeb ukazuje tempo expanze firmy meziročně.");
         double weight = 1.5;
+
         if (growth > 0.2m)
         {
             result.Positives.Add("Růst tržeb > 20 % – silná expanze.");
@@ -1185,6 +1237,7 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     {
         result.Explanations.Add("➡ Růst zisku meziročně ukazuje výkonnost jádra podnikání.");
         double weight = 1.6;
+
         if (growth > 0.3m)
         {
             result.Positives.Add("Zisk roste > 30 % – výborný vývoj.");
@@ -1207,17 +1260,19 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
         }
     }
 
-  public static void EvaluatePayoutRatio(decimal dividendPerShare, decimal eps, EvaluationResult result)
+    public static void EvaluatePayoutRatio(decimal dividendPerShare, decimal eps, EvaluationResult result)
     {
         double weight = 1.0;
+
         if (eps <= 0)
         {
             result.Issues.Add("Záporný nebo nulový zisk na akcii – nelze vypočítat payout ratio.");
             result.Score += WeightedScore(1, weight);
+
             return;
         }
 
-        var payout = dividendPerShare / eps;
+        decimal payout = dividendPerShare / eps;
         result.Explanations.Add($"➡ Výplatní poměr (payout ratio): {payout:P0} – poměr dividendy k zisku.");
 
         if (payout < 0.3m)
@@ -1245,10 +1300,13 @@ public partial record TransactionDetailModel(TransactionViewModel Transaction)
     public static void EvaluateTargetPriceVsCurrent(decimal targetPrice, decimal currentPrice, EvaluationResult result)
     {
         double weight = 1.2;
-        if (currentPrice <= 0 || targetPrice <= 0)
-            return;
 
-        var upside = (targetPrice - currentPrice) / currentPrice;
+        if ((currentPrice <= 0) || (targetPrice <= 0))
+        {
+            return;
+        }
+
+        decimal upside = (targetPrice - currentPrice) / currentPrice;
         result.Explanations.Add($"➡ Potenciál růstu: {upside:P1} na základě cílové ceny.");
 
         if (upside > 0.3m)
@@ -1279,7 +1337,7 @@ public class EvaluationResult
     public List<string> Positives { get; set; } = new();
     public List<string> Issues { get; set; } = new();
     public List<string> Explanations { get; set; } = new();
-    public double Score { get; set; } = 0;
+    public double Score { get; set; }
 
     public string GetSummary()
     {
@@ -1289,12 +1347,13 @@ public class EvaluationResult
             >= 56 => "✅ BUY: Silné fundamenty.",
             >= 42 => "🟡 HOLD: Smíšené signály.",
             >= 28 => "⚠️ SELL: Slabší fundamenty.",
-            _ => "📉 SELL: Velmi rizikové.",
+            _ => "📉 SELL: Velmi rizikové."
         };
 
         return rating;
     }
 }
+
 public class AlphaVantageResponse
 {
     [JsonProperty("Meta Data")]

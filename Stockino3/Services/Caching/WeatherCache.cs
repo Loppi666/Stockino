@@ -20,7 +20,8 @@ public sealed class WeatherCache : IWeatherCache
 
     public async ValueTask<IImmutableList<WeatherForecast>> GetForecast(CancellationToken token)
     {
-        var weatherText = await GetCachedWeather(token);
+        string? weatherText = await GetCachedWeather(token);
+
         if (!string.IsNullOrWhiteSpace(weatherText))
         {
             return _serializer.FromString<ImmutableArray<WeatherForecast>>(weatherText);
@@ -29,6 +30,7 @@ public sealed class WeatherCache : IWeatherCache
         if (!IsConnected)
         {
             _logger.LogWarning("App is offline and cannot connect to the API.");
+
             throw new WebException("No internet connection", WebExceptionStatus.ConnectFailure);
         }
 
@@ -38,17 +40,18 @@ public sealed class WeatherCache : IWeatherCache
         {
             var weather = response.Content;
             await Save(weather, token);
+
             return weather;
         }
-        else if (response.Error is not null)
+
+        if (response.Error is not null)
         {
             _logger.LogError(response.Error, "An error occurred while retrieving the latest Forecast.");
+
             throw response.Error;
         }
-        else
-        {
-            return ImmutableArray<WeatherForecast>.Empty;
-        }
+
+        return ImmutableArray<WeatherForecast>.Empty;
     }
 
     private static async ValueTask<StorageFile> GetFile(CreationCollisionOption option) =>
@@ -61,7 +64,7 @@ public sealed class WeatherCache : IWeatherCache
 
         // Reuse latest cache file if offline
         // or if the file is less than 5 minutes old
-        if (IsConnected || DateTimeOffset.Now.AddMinutes(-5) > properties.DateModified || token.IsCancellationRequested)
+        if (IsConnected || (DateTimeOffset.Now.AddMinutes(-5) > properties.DateModified) || token.IsCancellationRequested)
         {
             return null;
         }
@@ -71,7 +74,7 @@ public sealed class WeatherCache : IWeatherCache
 
     private async ValueTask Save(IImmutableList<WeatherForecast> weather, CancellationToken token)
     {
-        var weatherText = _serializer.ToString(weather);
+        string weatherText = _serializer.ToString(weather);
         var file = await GetFile(CreationCollisionOption.ReplaceExisting);
         await File.WriteAllTextAsync(file.Path, weatherText, token);
     }

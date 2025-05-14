@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Text.Json.Serialization;
 
 namespace Stockino3.DataContracts.Serialization;
@@ -20,5 +19,4 @@ namespace Stockino3.DataContracts.Serialization;
 [JsonSerializable(typeof(ImmutableList<WeatherForecast>))]
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 public partial class WeatherForecastContext : JsonSerializerContext
-{
-}
+{ }

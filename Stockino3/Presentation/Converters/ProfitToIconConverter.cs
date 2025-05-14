@@ -1,5 +1,4 @@
 using Microsoft.UI.Xaml.Data;
-using System;
 
 namespace Stockino3.Presentation.Converters
 {
@@ -14,13 +13,14 @@ namespace Stockino3.Presentation.Converters
                     // Zisk - ikona šipky nahoru
                     return "\uE74A"; // Symbol šipky nahoru z Segoe Fluent Icons
                 }
-                else if (profit < 0)
+
+                if (profit < 0)
                 {
                     // Ztráta - ikona šipky dolů
                     return "\uE74B"; // Symbol šipky dolů z Segoe Fluent Icons
                 }
             }
-            
+
             // Neutrální - horizontální čára
             return "\uE738"; // Symbol horizontální čáry z Segoe Fluent Icons
         }
