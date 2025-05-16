@@ -36,28 +36,24 @@ public partial class App : Application
 
                                             .ConfigureServices((context, services) =>
                                              {
-                                                 
                                                  services.Scan(scan => scan
                                                                       .FromAssemblyOf<IService>()
                                                                       .AddClasses(classes => classes.AssignableTo<IService>())
                                                                       .AsSelfWithInterfaces()
                                                                       .WithTransientLifetime());
-                                                 
-                                             
+
                                                  services.AddTransient<TransactionDetailModel>();
+
                                                  services.AddDbContext<TransactionContext>(options =>
                                                  {
                                                      options.UseSqlite($"Data Source={databasePath}");
                                                      options.EnableSensitiveDataLogging();
                                                      options.EnableDetailedErrors();
-                                                     options.LogTo(
-                                                         Console.WriteLine,
-                                                         new[] { DbLoggerCategory.Database.Command.Name },
-                                                         LogLevel.Information,
-                                                        
-                                                         DbContextLoggerOptions.UtcTime
-                                                       
-                                                     );
+
+                                                     options.LogTo(Console.WriteLine,
+                                                                   new[] { DbLoggerCategory.Database.Command.Name },
+                                                                   LogLevel.Information,
+                                                                   DbContextLoggerOptions.UtcTime);
                                                  });
 
                                                  // Registrace handleru pro AlphaVantage API
@@ -118,8 +114,7 @@ public partial class App : Application
                                                                             // DelegatingHandler will be automatically injected into Refit Client
                                                                            .AddTransient<DelegatingHandler, DebugHttpHandler>()
 #endif
-                                                                           .AddSingleton<IWeatherCache, WeatherCache>()
-                                                                           .AddRefitClient<IApiClient>(context))
+                                                                           .AddSingleton<IWeatherCache, WeatherCache>())
                                             .ConfigureServices((context, services) =>
                                              {
                                                  // TODO: Register your services
@@ -167,8 +162,6 @@ public partial class App : Application
 
 public interface IService
 { }
-
-
 
 // Handler pro přidání apiKey do query stringu
 public class AlphaVantageApiKeyHandler : DelegatingHandler

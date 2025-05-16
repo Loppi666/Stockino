@@ -45,6 +45,7 @@
             Localization;
             Navigation;
             ThemeService;
+            SkiaRenderer;
         </UnoFeatures>
     </PropertyGroup>
     <ItemGroup>
@@ -60,6 +61,7 @@
         <PackageReference Include="Microsoft.EntityFrameworkCore" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite.Core" />
+        <PackageReference Include="Refit.HttpClientFactory"/>
         <PackageReference Include="Skender.Stock.Indicators" />
         <PackageReference Include="Uno.Extensions.Navigation" />
         <PackageReference Include="Uno.Extensions.Reactive" />
